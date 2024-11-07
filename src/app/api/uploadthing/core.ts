@@ -12,17 +12,17 @@ export const ourFileRouter = {
   imageUploader: f({ image: { maxFileSize: "4MB", maxFileCount: 40 } })
     // Set permissions and file types for this FileRoute
     .middleware(async ({ req }) => {
-      const user = await auth();
-      if (!user.userId) throw new UploadThingError("Unauthorized");
+      const { userId } = await auth();
+      if (!userId) throw new UploadThingError("Unauthorized");
 
-      return { userId: user.userId };
+      return { userId };
     })
     .onUploadComplete(async ({ metadata, file }) => {
       await db.insert(images).values({
         name: file.name,
         url: file.url,
-        userId: metadata.userId
-      })
+        userId: metadata.userId,
+      });
 
       // !!! Whatever is returned here is sent to the clientside `onClientUploadComplete` callback
       return { uploadedBy: metadata.userId };
