@@ -22,7 +22,6 @@ export function Modal({ children }: { children: React.ReactNode }) {
     <div className="modal-backdrop">
       <dialog ref={dialogRef} className="m-0 h-screen w-screen bg-slate-900/50" onClose={onDismiss}>
         {children}
-        <button onClick={onDismiss} className="close-button" />
       </dialog>
     </div>,
     document.getElementById('modal-root')!
