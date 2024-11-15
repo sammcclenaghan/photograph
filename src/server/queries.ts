@@ -4,7 +4,7 @@ import { db } from "./db";
 export async function getImages(galleryId: number) {
   const user = await auth();
 
-  if (!user.userId) throw new Error("Unauthorized");
+  if (!user.userId) throw new Error("Unauthorized you are unauthoirzed");
 
   const userImages = await db.query.images.findMany({
     where: (model, { eq, and }) =>

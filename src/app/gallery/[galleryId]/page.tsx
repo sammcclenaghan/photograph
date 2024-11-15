@@ -15,7 +15,7 @@ export default async function GalleryPage({ params }: Props) {
     <div>
       <h1>Gallery {galleryId}</h1>
       <UploadButton galleryId={galleryIdNum} />
-      <Images id={galleryIdNum} />
+      <Images galleryId={galleryIdNum} />
     </div>
   );
 }
