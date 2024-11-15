@@ -19,7 +19,7 @@ export default function Header() {
       </SignedOut>
       <SignedIn>
         <div>
-          <UploadButton endpoint="imageUploader" onClientUploadComplete={() => { router.refresh() }} />
+          <UploadButton endpoint="galleryImageUploader" onClientUploadComplete={() => { router.refresh() }} />
           <UserButton />
         </div>
       </SignedIn>
