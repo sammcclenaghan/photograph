@@ -1,19 +1,18 @@
 import PhotoPage from "~/app/components/PhotoPage";
-import { getImage } from "~/server/queries";
 
 type Props = {
   params: {
-    id: string;
+    imageId: string;
   };
 };
 
 export default async function PhotoModal(props: Props) {
   const { params } = props;
-  const { id } = params;
+  const { imageId } = params;
 
   return (
     <div>
-      <PhotoPage id={Number(id)} />
+      <PhotoPage id={Number(imageId)} />
     </div>
   );
 }

@@ -13,8 +13,10 @@ export const ourFileRouter = {
   galleryImageUploader: f({ image: { maxFileSize: "4MB", maxFileCount: 40 } })
     .input(z.object({ galleryId: z.number() }))
     // Set permissions and file types for this FileRoute
-    .middleware(async ({ req, input }) => {
+    .middleware(async ({ input }) => {
       const { userId } = await auth();
+
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       if (!userId) throw new UploadThingError("Unauthorized");
 
       return { userId, galleryId: input.galleryId };

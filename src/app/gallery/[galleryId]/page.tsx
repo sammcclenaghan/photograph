@@ -3,19 +3,19 @@ import Images from "./images";
 
 type Props = {
   params: {
-    id: string;
+    galleryId: string;
   };
 };
 
 export default async function GalleryPage({ params }: Props) {
-  const { id } = await params;
-  const galleryId = Number(id);
+  const { galleryId } = await params;
+  const galleryIdNum = Number(galleryId);
 
   return (
     <div>
       <h1>Gallery {galleryId}</h1>
-      <UploadButton galleryId={galleryId} />
-      <Images id={galleryId} />
+      <UploadButton galleryId={galleryIdNum} />
+      <Images id={galleryIdNum} />
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { getImages } from "~/server/queries";
-import { UploadButton } from "~/utils/uploadthing";
 
 interface ImageProps {
   id: number;
@@ -15,7 +14,7 @@ export default async function Images(galleryId: ImageProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 p-4">
         {images.map((image) => (
           <div key={image.id} className="flex flex-col">
-            <Link href={`/gallery/${image.id}`}>
+            <Link href={`/gallery/${id}/img/${image.id}`}>
               <div className="relative w-full h-0 pb-[100%]">
                 <img src={image.url} />
               </div>

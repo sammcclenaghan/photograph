@@ -1,7 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "./db";
-import { images, galleries } from "./db/schema";
-import { and, eq } from "drizzle-orm";
 
 export async function getImages(galleryId: number) {
   const user = await auth();

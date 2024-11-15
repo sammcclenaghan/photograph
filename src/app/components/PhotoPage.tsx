@@ -1,5 +1,4 @@
 import { getImage } from "~/server/queries";
-import Image from "next/image";
 interface PhotoPageProps {
   id: number;
 }

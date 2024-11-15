@@ -40,7 +40,12 @@ export default async function HomePage() {
 
 function CreateGalleryForm() {
   return (
-    <form action={createGallery} className="flex space-x-2">
+    <form action={async (formData) => {
+      "use server";
+      await createGallery(formData)
+    }
+
+    } className="flex space-x-2">
       <input
         type="text"
         name="name"
