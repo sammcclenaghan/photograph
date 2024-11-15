@@ -6,11 +6,14 @@ import {
   SignedOut,
   UserButton
 } from '@clerk/nextjs'
+import Link from 'next/link';
 
 export default function Header() {
   return (
     <nav className="flex w-full items-center justify-between p-4 text-xl border-b font-semibold">
-      <div> Gallery</div>
+      <Link href={"/"}>
+        <div> Home</div>
+      </Link>
       <SignedOut>
         <SignInButton />
       </SignedOut>
