@@ -15,6 +15,7 @@ export const ourFileRouter = {
     // Set permissions and file types for this FileRoute
     .middleware(async ({ input }) => {
       const { userId } = await auth();
+      console.log('middleware touched')
 
       // eslint-disable-next-line @typescript-eslint/only-throw-error
       if (!userId) throw new UploadThingError("Unauthorized");
@@ -28,6 +29,7 @@ export const ourFileRouter = {
         userId: metadata.userId,
         galleryId: metadata.galleryId,
       });
+      console.log("inserted!")
 
       // !!! Whatever is returned here is sent to the clientside `onClientUploadComplete` callback
       return { uploadedBy: metadata.userId };
