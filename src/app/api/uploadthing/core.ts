@@ -18,7 +18,7 @@ export const ourFileRouter = {
       console.log('middleware touched')
 
       // eslint-disable-next-line @typescript-eslint/only-throw-error
-      if (!userId) throw new UploadThingError("Unauthorized");
+      if (!userId) throw new UploadThingError("Unauthorized the userId doesn't work");
 
       return { userId, galleryId: input.galleryId };
     })
