@@ -2,7 +2,7 @@ import { getGalleries } from "~/server/queries";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import LandingPage from "./components/LandingPage";
 import Link from "next/link";
-import CreateGalleryForm from "./components/CreateGalleryForm";
+import { createGallery } from "~/server/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -17,9 +17,7 @@ export default async function HomePage() {
       <SignedIn>
         {/* Header with Create Gallery Button */}
         <div className="flex justify-between items-center mb-6">
-          {/* You can add a title or logo here if desired */}
           <h1 className="text-2xl font-bold">My Galleries</h1>
-          {/* Create Gallery Form or Button */}
           <CreateGalleryForm />
         </div>
         {/* Galleries Grid */}
@@ -37,5 +35,28 @@ export default async function HomePage() {
         </div>
       </SignedIn>
     </main>
+  );
+}
+
+function CreateGalleryForm() {
+  return (
+    <form action={createGallery} className="flex space-x-2">
+      <input
+        type="text"
+        name="name"
+        placeholder="Gallery Name"
+        className="border p-2"
+        required
+      />
+      <input
+        type="text"
+        name="description"
+        placeholder="Description"
+        className="border p-2"
+      />
+      <button type="submit" className="bg-blue-500 text-white p-2">
+        Create Gallery
+      </button>
+    </form>
   );
 }

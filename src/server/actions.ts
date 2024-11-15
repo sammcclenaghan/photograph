@@ -9,14 +9,14 @@ export async function createGallery(formData: FormData) {
   if (!user.userId) throw new Error("Unauthorized");
 
   const name = formData.get("name") as string;
+  const description = formData.get("description") as string || ""; // Add description handling
   if (!name) throw new Error("Gallery name is required");
 
-  const coverPhotoUrl = formData.get("coverPhotoUrl") as string;
-  if (!coverPhotoUrl) throw new Error("Cover photo is required");
-
-  await db.insert(galleries).values({
+  const newGallery = await db.insert(galleries).values({
     name,
-    cover_photo_url: coverPhotoUrl,
+    description,
     userId: user.userId,
-  });
+  }).returning();
+
+  return newGallery[0]; // Return the newly created gallery
 }
