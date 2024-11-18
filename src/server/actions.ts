@@ -11,15 +11,14 @@ export async function createGallery(formData: FormData) {
   if (!user.userId) throw new Error("Unauthorized");
 
   const name = formData.get("name") as string;
-  const description = formData.get("description") as string || ""; // Add description handling
+  const description = formData.get("description") as string || "";
   if (!name) throw new Error("Gallery name is required");
 
-  await db.insert(galleries).values({
+  const [gallery] = await db.insert(galleries).values({
     name,
     description,
     userId: user.userId,
   }).returning();
 
-  revalidatePath("/");
-  redirect("/")
+  return gallery?.id
 }

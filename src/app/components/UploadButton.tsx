@@ -46,9 +46,9 @@ function UploadSVG() {
   );
 }
 
-export function UploadButton({ galleryId }: { galleryId: number }) {
+export function UploadButton({ galleryId, type }: { galleryId: number, type: "galleryImageUploader" | "galleryCoverUploader" }) {
   const router = useRouter();
-  const { inputProps } = useUploadThingInputProps(galleryId, "galleryImageUploader", {
+  const { inputProps } = useUploadThingInputProps(galleryId, type, {
     onClientUploadComplete() {
       router.refresh();
     }
@@ -56,11 +56,11 @@ export function UploadButton({ galleryId }: { galleryId: number }) {
 
   return (
     <div>
-      <label htmlFor="upload-button" className="cursor-pointer">
+      <label htmlFor={`upload-button-${type}`} className="cursor-pointer">
         <UploadSVG />
       </label>
       <input
-        id="upload-button"
+        id={`upload-button-${type}`}
         type="file"
         className="sr-only"
         {...inputProps}
