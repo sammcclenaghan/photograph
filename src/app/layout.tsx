@@ -17,6 +17,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Photograph",
   description: "HI",
+  icons: [{ rel: "icon", url: "/icon.svg" }]
 };
 
 export default function RootLayout({
@@ -28,25 +29,25 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider>
-        <html lang="en">
-          <NextSSRPlugin
-            /**
-             * The `extractRouterConfig` will extract **only** the route configs
-             * from the router to prevent additional information from being
-             * leaked to the client. The data passed to the client is the same
-             * as if you were to fetch `/api/uploadthing` directly.
-             */
-            routerConfig={extractRouterConfig(ourFileRouter)}
-          />
-          <body className={`font-sans ${inter.variable} dark`}>
-            <div className="grid h-screen grid-rows-[auto,1fr]">
-              <Header/>
-              <main className="overflow-y-scroll">{children}</main>
-              {modal}
-            </div>
-            <div id="modal-root" />
-          </body>
-        </html>
+      <html lang="en">
+        <NextSSRPlugin
+          /**
+           * The `extractRouterConfig` will extract **only** the route configs
+           * from the router to prevent additional information from being
+           * leaked to the client. The data passed to the client is the same
+           * as if you were to fetch `/api/uploadthing` directly.
+           */
+          routerConfig={extractRouterConfig(ourFileRouter)}
+        />
+        <body className={`font-sans ${inter.variable} dark`}>
+          <div className="grid h-screen grid-rows-[auto,1fr]">
+            <Header />
+            <main className="overflow-y-scroll">{children}</main>
+            {modal}
+          </div>
+          <div id="modal-root" />
+        </body>
+      </html>
     </ClerkProvider>
   );
 }
