@@ -52,7 +52,7 @@ export const images = createTable(
     url: varchar("url", { length: 128 }).notNull(),
     userId: varchar("userId", { length: 256 }).notNull(),
     galleryId: integer("gallery_id")
-      .references(() => galleries.id)
+      .references(() => galleries.id, { onDelete: "cascade" })
       .notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .default(sql`CURRENT_TIMESTAMP`)

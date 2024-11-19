@@ -5,6 +5,7 @@ import { galleries } from "~/server/db/schema";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { and, eq } from "drizzle-orm";
 
 export async function createGallery(formData: FormData) {
   const user = await auth();
@@ -21,4 +22,16 @@ export async function createGallery(formData: FormData) {
   }).returning();
 
   return gallery?.id
+}
+
+export async function deleteGallery(galleryId: number) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    throw new Error('Unauthorized');
+  }
+
+  await db.delete(galleries)
+    .where(and(eq(galleries.id, galleryId), eq(galleries.userId, userId)));
+
 }
