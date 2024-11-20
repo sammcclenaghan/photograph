@@ -1,22 +1,21 @@
 import "~/styles/globals.css";
 import Header from "./components/Header";
-import { Inter } from "next/font/google";
+import { Outfit } from "next/font/google";
 import { type Metadata } from "next";
-import {
-  ClerkProvider,
-} from '@clerk/nextjs'
+import { ClerkProvider } from '@clerk/nextjs'
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { extractRouterConfig } from "uploadthing/server";
 import { ourFileRouter } from "./api/uploadthing/core";
+import Providers from "./providers"
 
-const inter = Inter({
+const outfit = Outfit({
   subsets: ["latin"],
-  variable: "--font-sans",
+  variable: "--font-outfit",
 });
 
 export const metadata: Metadata = {
   title: "Photograph",
-  description: "HI",
+  description: "A beautiful photo gallery application",
   icons: [{ rel: "icon", url: "/icon.svg" }]
 };
 
@@ -29,23 +28,21 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider>
-      <html lang="en">
-        <NextSSRPlugin
-          /**
-           * The `extractRouterConfig` will extract **only** the route configs
-           * from the router to prevent additional information from being
-           * leaked to the client. The data passed to the client is the same
-           * as if you were to fetch `/api/uploadthing` directly.
-           */
-          routerConfig={extractRouterConfig(ourFileRouter)}
-        />
-        <body className={`font-sans ${inter.variable} dark`}>
-          <div className="grid h-screen grid-rows-[auto,1fr]">
-            <Header />
-            <main className="overflow-y-scroll">{children}</main>
-            {modal}
-          </div>
-          <div id="modal-root" />
+      <html lang="en" suppressHydrationWarning className={outfit.className}>
+        <body className={`font-sans antialiased`}>
+          <Providers>
+            <NextSSRPlugin
+              routerConfig={extractRouterConfig(ourFileRouter)}
+            />
+            <div className="flex min-h-screen flex-col">
+              <Header />
+              <main className="flex-1 overflow-y-auto">
+                {children}
+              </main>
+              {modal}
+            </div>
+            <div id="modal-root" />
+          </Providers>
         </body>
       </html>
     </ClerkProvider>

@@ -2,8 +2,11 @@ import { getGalleries } from "~/server/queries";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import LandingPage from "./components/LandingPage";
 import Link from "next/link";
-import { PlusIcon } from '@heroicons/react/20/solid'
+import { PlusIcon } from 'lucide-react'
 import { deleteGallery } from "~/server/actions";
+import CreateGalleryModal from "./components/CreateGalleryModal";
+import { Button } from "~/components/ui/button";
+import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +17,9 @@ export default async function HomePage() {
         <LandingPage />
       </SignedOut>
       <SignedIn>
-        <Galleries />
+        <Suspense fallback={<div>Loading...</div>}>
+          <Galleries />
+        </Suspense>
       </SignedIn>
     </main>
   );
@@ -28,11 +33,14 @@ async function Galleries() {
   return (
     <div className="bg-white">
       <div className="mx-auto max-w-2xl px-4 py-16 sm:px-6 sm:py-24 lg:max-w-7xl lg:px-8">
-        <div className="flex justify-between">
-          <h2 className="text-xl font-bold text-gray-900">Galleries</h2>
-          <Link href={"/create/"}>
-            <button className="">Add new gallery</button>
-          </Link>
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold text-gray-900">Galleries</h2>
+          <CreateGalleryModal>
+            <Button>
+              <PlusIcon className="mr-2 h-4 w-4" />
+              Create New Gallery
+            </Button>
+          </CreateGalleryModal>
         </div>
 
         <div className="mt-8 grid grid-cols-1 gap-y-12 sm:grid-cols-2 sm:gap-x-6 lg:grid-cols-4 xl:gap-x-8">
@@ -45,6 +53,7 @@ async function Galleries() {
                       <img
                         src={gallery.coverPhotoUrl}
                         alt={gallery.name}
+                        className="object-cover w-full h-full"
                       />
                     ) : (
                       <span className="text-center">No Cover Photo</span>
@@ -61,24 +70,24 @@ async function Galleries() {
                     <p className="relative text-lg font-semibold text-white">{gallery.name}</p>
                   </div>
                 </div>
-                <div className="mt-6">
-                  <button
-                    onClick={async () => {
-                      "use server";
-
-                      await deleteGallery(gallery.id);
-                    }}
-                    className="relative flex items-center justify-center rounded-md border border-transparent bg-gray-100 px-8 py-2 text-sm font-medium text-gray-900 hover:bg-gray-200"
-                  >
-                    Delete<span className="sr-only">, {gallery.name}</span>
-                  </button>
-                </div>
               </Link>
+              <div className="mt-6">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={async () => {
+                    "use server";
+                    await deleteGallery(gallery.id);
+                  }}
+                >
+                  Delete<span className="sr-only">, {gallery.name}</span>
+                </Button>
+              </div>
             </div>
           ))}
         </div>
       </div>
-    </div >
+    </div>
   )
 }
 
@@ -103,15 +112,12 @@ function EmptyState() {
       <h3 className="mt-2 text-sm font-semibold text-gray-900">No galleries</h3>
       <p className="mt-1 text-sm text-gray-500">Get started by creating a new gallery.</p>
       <div className="mt-6">
-        <Link href="/create">
-          <button
-            type="button"
-            className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
-          >
-            <PlusIcon aria-hidden="true" className="-ml-0.5 mr-1.5 size-5" />
+        <CreateGalleryModal>
+          <Button>
+            <PlusIcon className="mr-2 h-4 w-4" />
             New Gallery
-          </button>
-        </Link>
+          </Button>
+        </CreateGalleryModal>
       </div>
     </div>
   );
