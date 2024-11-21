@@ -1,70 +1,104 @@
-// src/app/components/UploadButton.tsx
 "use client"
 
-import { useRouter } from "next/navigation";
-import { useUploadThing } from "~/utils/uploadthing";
+import { useCallback, useRef, useState } from "react"
+import { useUploadThing } from "~/utils/uploadthing"
+import { useRouter } from "next/navigation"
+import { Button } from "~/components/ui/button"
+import { Upload, X } from 'lucide-react'
+import { cn } from "~/lib/utils"
+import { Progress } from "~/components/ui/progress"
 
-type Input = Parameters<typeof useUploadThing>;
+type Input = Parameters<typeof useUploadThing>
 
-const useUploadThingInputProps = (galleryId: number, ...args: Input) => {
-  const $ut = useUploadThing(...args);
-
-  const onChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-
-    const selectedFiles = Array.from(e.target.files);
-    const result = await $ut.startUpload(selectedFiles, { galleryId });
-
-    console.log("uploaded files", result);
-  };
-  return {
-    inputProps: {
-      onChange,
-      multiple: true,
-      accept: "image/*",
+export function UploadButton({
+  galleryId,
+  type,
+}: {
+  galleryId: number
+  type: "galleryImageUploader" | "galleryCoverUploader"
+}) {
+  const router = useRouter()
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const { startUpload } = useUploadThing(type, {
+    onClientUploadComplete: () => {
+      setIsUploading(false)
+      setUploadProgress(0)
+      router.refresh()
     },
-    isUploading: $ut.isUploading,
-  };
-};
+    onUploadProgress: (progress) => {
+      setUploadProgress(progress)
+    },
+    onUploadError: () => {
+      setIsUploading(false)
+      setUploadProgress(0)
+    },
+  })
 
-function UploadSVG() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-      className="h-6 w-6"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"
-      />
-    </svg>
-  );
-}
+  const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return
 
-export function UploadButton({ galleryId, type }: { galleryId: number, type: "galleryImageUploader" | "galleryCoverUploader" }) {
-  const router = useRouter();
-  const { inputProps } = useUploadThingInputProps(galleryId, type, {
-    onClientUploadComplete() {
-      router.refresh();
+    setIsUploading(true)
+    const files = Array.from(e.target.files)
+    await startUpload(files, { galleryId })
+  }, [galleryId, startUpload])
+
+  const onUploadClick = (e: React.MouseEvent) => {
+    if (isUploading) {
+      e.preventDefault()
+      e.stopPropagation()
+      setIsUploading(false)
+      setUploadProgress(0)
     }
-  });
+  }
 
   return (
-    <div>
-      <label htmlFor={`upload-button-${type}`} className="cursor-pointer">
-        <UploadSVG />
+    <div className="flex flex-col items-center justify-center gap-1">
+      <label
+        className={cn(
+          "group relative flex h-10 w-36 cursor-pointer items-center justify-center overflow-hidden rounded-md text-white after:transition-[width] after:duration-500 focus-within:ring-2 focus-within:ring-blue-600 focus-within:ring-offset-2",
+          isUploading ? "bg-zinc-950 after:absolute after:left-0 after:h-full after:bg-zinc-700 after:content-['']" : "bg-zinc-800",
+        )}
+        style={isUploading ? { "--progress-width": `${uploadProgress}%` } as React.CSSProperties : {}}
+        onClick={onUploadClick}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/*"
+          onChange={handleUpload}
+          className="sr-only"
+          disabled={isUploading}
+        />
+        {isUploading ? (
+          <span className="z-10">
+            {uploadProgress >= 100 ? (
+              "Processing..."
+            ) : (
+              <>
+                <span className="block group-hover:hidden">{uploadProgress}%</span>
+                <X className="hidden size-4 group-hover:block" />
+              </>
+            )}
+          </span>
+        ) : (
+          <span className="flex items-center">
+            <Upload className="w-4 h-4 mr-2" />
+            Upload
+          </span>
+        )}
+        {isUploading && (
+          <Progress
+            value={uploadProgress}
+            className="w-full h-1 absolute bottom-0 left-0"
+          />
+        )}
       </label>
-      <input
-        id={`upload-button-${type}`}
-        type="file"
-        className="sr-only"
-        {...inputProps}
-      />
+      <div className="h-[1.25rem] text-xs leading-5 text-gray-600">
+        {type === "galleryImageUploader" ? "Upload images to gallery" : "Upload cover photo"}
+      </div>
     </div>
-  );
+  )
 }
