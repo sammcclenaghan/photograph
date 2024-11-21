@@ -1,7 +1,6 @@
 'use client'
 
 import { AlertCircle, Upload } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert';
 import { Button } from '~/components/ui/button';
@@ -15,7 +14,14 @@ import Image from 'next/image';
 
 const UploadDropzone = generateUploadDropzone<OurFileRouter>()
 
-export default function CreateGalleryModal({ children }: { children: React.ReactNode }) {
+type Gallery = {
+  id: number;
+  name: string;
+  description: string;
+  coverPhotoUrl: string | null;
+};
+
+export default function CreateGalleryModal({ children, onGalleryCreated }: { children: React.ReactNode, onGalleryCreated: (gallery: Gallery) => void }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -23,7 +29,6 @@ export default function CreateGalleryModal({ children }: { children: React.React
   const [error, setError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const router = useRouter();
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
@@ -41,18 +46,18 @@ export default function CreateGalleryModal({ children }: { children: React.React
 
     try {
       const formData = new FormData(event.currentTarget);
-      const newGalleryId = await createGallery(formData);
+      const newGallery = await createGallery(formData);
 
-      if (!newGalleryId) {
+      if (!newGallery) {
         throw new Error('Failed to create Gallery');
       }
 
       if (selectedFile) {
         const uploadDropzone = UploadDropzone({ endpoint: "galleryCoverUploader" });
-        await uploadDropzone.uploadFiles([selectedFile], { galleryId: newGalleryId });
+        await uploadDropzone.uploadFiles([selectedFile], { galleryId: newGallery.id });
       }
 
-      router.push(`/gallery/${newGalleryId}`);
+      onGalleryCreated(newGallery);
       handleClose();
     } catch (err) {
       setError('An error occurred while creating the gallery. Please try again');
