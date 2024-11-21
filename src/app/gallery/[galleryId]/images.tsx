@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import { getImages } from '~/server/actions'
-import { Loader2, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { getImages, deleteImage } from '~/server/actions'
+import { Loader2, ChevronLeft, ChevronRight, X, Trash2 } from 'lucide-react'
 import { Dialog, DialogContent, DialogTitle } from "~/components/ui/dialog"
 import { Button } from "~/components/ui/button"
 
@@ -25,23 +25,23 @@ export default function Images({ galleryId }: ImageProps) {
   const [selectedImage, setSelectedImage] = useState<ImageType | null>(null)
   const router = useRouter()
 
-  useEffect(() => {
-    const fetchImages = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
-        const fetchedImages = await getImages(galleryId)
-        setImages(fetchedImages)
-      } catch (err) {
-        console.error("Error fetching images:", err)
-        setError("Failed to load images. Please try again later.")
-      } finally {
-        setIsLoading(false)
-      }
+  const fetchImages = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      const fetchedImages = await getImages(galleryId)
+      setImages(fetchedImages)
+    } catch (err) {
+      console.error("Error fetching images:", err)
+      setError("Failed to load images. Please try again later.")
+    } finally {
+      setIsLoading(false)
     }
-
-    fetchImages()
   }, [galleryId])
+
+  useEffect(() => {
+    fetchImages()
+  }, [fetchImages])
 
   useEffect(() => {
     const handleRouteChange = () => {
@@ -76,6 +76,20 @@ export default function Images({ galleryId }: ImageProps) {
     router.push(`/gallery/${galleryId}?photoId=${images[newIndex].id}`, { shallow: true })
   }, [selectedImage, images, galleryId, router])
 
+  const handleDeleteImage = useCallback(async (imageId: number) => {
+    try {
+      await deleteImage(imageId)
+      setImages(prevImages => prevImages.filter(img => img.id !== imageId))
+      alert("The image has been successfully deleted.")
+      if (selectedImage?.id === imageId) {
+        closeModal()
+      }
+    } catch (error) {
+      console.error("Error deleting image:", error)
+      alert("Failed to delete the image. Please try again.")
+    }
+  }, [selectedImage, closeModal])
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -105,17 +119,31 @@ export default function Images({ galleryId }: ImageProps) {
       <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4">
         {images.map((image) => (
           <div key={image.id} className="break-inside-avoid mb-4">
-            <div
-              className="rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer"
-              onClick={() => openModal(image)}
-            >
-              <Image
-                src={image.url}
-                alt={image.name}
-                width={500}
-                height={500}
-                className="w-full h-auto object-cover"
-              />
+            <div className="relative group">
+              <div
+                className="rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer"
+                onClick={() => openModal(image)}
+              >
+                <Image
+                  src={image.url}
+                  alt={image.name}
+                  width={500}
+                  height={500}
+                  className="w-full h-auto object-cover"
+                />
+              </div>
+              <Button
+                variant="destructive"
+                size="icon"
+                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleDeleteImage(image.id)
+                }}
+                aria-label="Delete image"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         ))}
@@ -160,6 +188,15 @@ export default function Images({ galleryId }: ImageProps) {
               aria-label="Next image"
             >
               <ChevronRight className="h-8 w-8" />
+            </Button>
+            <Button
+              variant="destructive"
+              size="icon"
+              className="absolute bottom-2 right-2 text-white"
+              onClick={() => selectedImage && handleDeleteImage(selectedImage.id)}
+              aria-label="Delete image"
+            >
+              <Trash2 className="h-6 w-6" />
             </Button>
           </div>
         </DialogContent>

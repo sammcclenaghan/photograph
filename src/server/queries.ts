@@ -29,6 +29,20 @@ export async function getImage(id: number) {
   return image;
 }
 
+export async function getGallery(id: number) {
+  const user = await auth();
+  if (!user.userId) throw new Error("Unauthorized");
+
+  const gallery = await db.query.galleries.findFirst({
+    where: (model, { eq }) => eq(model.id, id),
+  });
+  if (!gallery) throw new Error("Gallery not found");
+
+  if (gallery.userId !== user.userId) throw new Error("Unauthorized");
+
+  return gallery;
+}
+
 export async function getGalleries() {
   const user = await auth();
   if (!user.userId) throw new Error("Unauthorized");

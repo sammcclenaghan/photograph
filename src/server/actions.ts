@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "~/server/db";
-import { galleries } from "~/server/db/schema";
+import { galleries, images } from "~/server/db/schema";
 import { auth } from "@clerk/nextjs/server";
 import { and, eq } from "drizzle-orm";
 
@@ -53,6 +53,16 @@ export async function updateGalleryCoverPhoto(galleryId: number, coverPhotoUrl: 
   await db.update(galleries)
     .set({ coverPhotoUrl })
     .where(and(eq(galleries.id, galleryId), eq(galleries.userId, user.userId)));
+
+  return true;
+}
+
+export async function deleteImage(imageId: number) {
+  const user = await auth();
+  if (!user.userId) throw new Error("Unauthorized");
+
+  await db.delete(images)
+    .where(and(eq(images.id, imageId), eq(images.userId, user.userId)));
 
   return true;
 }

@@ -23,9 +23,10 @@ export function UploadButton({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { startUpload } = useUploadThing(type, {
     onClientUploadComplete: () => {
+      console.log("Upload completed, refreshing page...")
       setIsUploading(false)
       setUploadProgress(0)
-      router.refresh()
+      router.push(`/gallery/${galleryId}`)
     },
     onUploadProgress: (progress) => {
       setUploadProgress(progress)

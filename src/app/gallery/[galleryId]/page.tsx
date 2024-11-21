@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { UploadButton } from "~/app/components/UploadButton"
 import Images from "./images"
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
+import { getGallery } from '~/server/queries'
 
 type Props = {
   params: {
@@ -12,12 +13,13 @@ type Props = {
 export default async function GalleryPage({ params }: Props) {
   const { galleryId } = await params
   const galleryIdNum = Number(galleryId)
+  const gallery = await getGallery(galleryIdNum)
 
   return (
     <div className="container mx-auto px-4 py-8">
       <Card className="bg-zinc-50 border-zinc-200">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-2xl font-bold text-zinc-800">Gallery {galleryId}</CardTitle>
+          <CardTitle className="text-2xl font-bold text-zinc-800">{gallery.name}</CardTitle>
           <UploadButton galleryId={galleryIdNum} type="galleryImageUploader" />
         </CardHeader>
         <CardContent>
