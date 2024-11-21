@@ -3,8 +3,6 @@
 import { db } from "~/server/db";
 import { galleries } from "~/server/db/schema";
 import { auth } from "@clerk/nextjs/server";
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 
 export async function createGallery(formData: FormData) {
@@ -24,6 +22,19 @@ export async function createGallery(formData: FormData) {
   return gallery?.id
 }
 
+export async function getImages(galleryId: number) {
+  const user = await auth()
+  if (!user.userId) throw new Error("Unauthorized")
+
+  const userImages = await db.query.images.findMany({
+    where: (model, { eq, and }) =>
+      and(eq(model.userId, user.userId), eq(model.galleryId, galleryId)),
+    orderBy: (model, { desc }) => desc(model.id),
+  })
+
+  return userImages
+}
+
 export async function deleteGallery(galleryId: number) {
   const { userId } = await auth();
 
@@ -33,5 +44,15 @@ export async function deleteGallery(galleryId: number) {
 
   await db.delete(galleries)
     .where(and(eq(galleries.id, galleryId), eq(galleries.userId, userId)));
+}
 
+export async function updateGalleryCoverPhoto(galleryId: number, coverPhotoUrl: string) {
+  const user = await auth();
+  if (!user.userId) throw new Error("Unauthorized");
+
+  await db.update(galleries)
+    .set({ coverPhotoUrl })
+    .where(and(eq(galleries.id, galleryId), eq(galleries.userId, user.userId)));
+
+  return true;
 }

@@ -6,7 +6,6 @@ import { ClerkProvider } from '@clerk/nextjs'
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { extractRouterConfig } from "uploadthing/server";
 import { ourFileRouter } from "./api/uploadthing/core";
-import Providers from "./providers"
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -30,19 +29,17 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" suppressHydrationWarning className={outfit.className}>
         <body className={`font-sans antialiased`}>
-          <Providers>
-            <NextSSRPlugin
-              routerConfig={extractRouterConfig(ourFileRouter)}
-            />
-            <div className="flex min-h-screen flex-col">
-              <Header />
-              <main className="flex-1 overflow-y-auto">
-                {children}
-              </main>
-              {modal}
-            </div>
-            <div id="modal-root" />
-          </Providers>
+          <NextSSRPlugin
+            routerConfig={extractRouterConfig(ourFileRouter)}
+          />
+          <div className="flex min-h-screen flex-col">
+            <Header />
+            <main className="flex-1 overflow-y-auto">
+              {children}
+            </main>
+            {modal}
+          </div>
+          <div id="modal-root" />
         </body>
       </html>
     </ClerkProvider>

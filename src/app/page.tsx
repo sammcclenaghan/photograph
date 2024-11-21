@@ -2,7 +2,7 @@ import { getGalleries } from "~/server/queries";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import LandingPage from "./components/LandingPage";
 import Link from "next/link";
-import { PlusIcon } from 'lucide-react'
+import { PlusIcon, Trash2Icon } from 'lucide-react'
 import { deleteGallery } from "~/server/actions";
 import CreateGalleryModal from "./components/CreateGalleryModal";
 import { Button } from "~/components/ui/button";
@@ -10,7 +10,7 @@ import { Suspense } from "react";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
+export default function HomePage() {
   return (
     <main className="mx-auto max-w-[1960px] p-4">
       <SignedOut>
@@ -45,7 +45,7 @@ async function Galleries() {
 
         <div className="mt-8 grid grid-cols-1 gap-y-12 sm:grid-cols-2 sm:gap-x-6 lg:grid-cols-4 xl:gap-x-8">
           {galleries.map((gallery) => (
-            <div key={gallery.id}>
+            <div key={gallery.id} className="relative group">
               <Link href={`gallery/${gallery.id}`}>
                 <div className="relative">
                   <div className="relative h-72 w-full overflow-hidden rounded-lg flex items-center justify-center">
@@ -58,31 +58,27 @@ async function Galleries() {
                     ) : (
                       <span className="text-center">No Cover Photo</span>
                     )}
+                    <div className="absolute inset-0 bg-black bg-opacity-30 flex items-end p-4">
+                      <h3 className="text-lg font-semibold text-white">{gallery.name}</h3>
+                    </div>
                   </div>
-                  <div className="relative mt-4">
-                    <p className="mt-1 text-sm text-gray-500">{gallery.description}</p>
-                  </div>
-                  <div className="absolute inset-x-0 top-0 flex h-72 items-end justify-end overflow-hidden rounded-lg p-4">
-                    <div
-                      aria-hidden="true"
-                      className="absolute inset-x-0 bottom-0 h-36 bg-gradient-to-t from-black opacity-50"
-                    />
-                    <p className="relative text-lg font-semibold text-white">{gallery.name}</p>
+                  <div className="mt-2">
+                    <p className="text-sm text-gray-500">{gallery.description}</p>
                   </div>
                 </div>
               </Link>
-              <div className="mt-6">
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={async () => {
-                    "use server";
-                    await deleteGallery(gallery.id);
-                  }}
-                >
-                  Delete<span className="sr-only">, {gallery.name}</span>
-                </Button>
-              </div>
+              <Button
+                variant="secondary"
+                size="icon"
+                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white hover:bg-gray-100"
+                onClick={async () => {
+                  "use server";
+                  await deleteGallery(gallery.id);
+                }}
+                aria-label={`Delete ${gallery.name}`}
+              >
+                <Trash2Icon className="h-4 w-4 text-gray-600" />
+              </Button>
             </div>
           ))}
         </div>
