@@ -1,18 +1,16 @@
 'use client'
 
-import { AlertCircle, Upload } from 'lucide-react';
+import { AlertCircle, ArrowLeft } from 'lucide-react';
 import { useState } from 'react'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert';
 import { Button } from '~/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '~/components/ui/dialog';
 import { Input } from '~/components/ui/input';
 import { Label } from '~/components/ui/label';
-import { createGallery } from '~/server/actions';
-import { generateUploadDropzone } from '@uploadthing/react';
-import { OurFileRouter } from '../api/uploadthing/core';
-import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
-const UploadDropzone = generateUploadDropzone<OurFileRouter>()
+import { createGallery, updateGalleryCoverPhoto } from '~/server/actions';
+import UploadDropZone from './UploadDropZone';
 
 type Gallery = {
   id: number;
@@ -23,42 +21,29 @@ type Gallery = {
 
 export default function CreateGalleryModal({ children, onGalleryCreated }: { children: React.ReactNode, onGalleryCreated: (gallery: Gallery) => void }) {
   const [open, setOpen] = useState(false);
+  const [step, setStep] = useState(1);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [newGallery, setNewGallery] = useState<Gallery | null>(null);
+  const router = useRouter();
 
-  const handleFileSelect = (file: File) => {
-    setSelectedFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setPreviewUrl(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleCreateGallery = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setIsLoading(true);
     setError(null);
 
     try {
       const formData = new FormData(event.currentTarget);
-      const newGallery = await createGallery(formData);
+      const gallery = await createGallery(formData);
 
-      if (!newGallery) {
+      if (!gallery) {
         throw new Error('Failed to create Gallery');
       }
 
-      if (selectedFile) {
-        const uploadDropzone = UploadDropzone({ endpoint: "galleryCoverUploader" });
-        await uploadDropzone.uploadFiles([selectedFile], { galleryId: newGallery.id });
-      }
-
-      onGalleryCreated(newGallery);
-      handleClose();
+      setNewGallery(gallery);
+      setStep(2);
     } catch (err) {
       setError('An error occurred while creating the gallery. Please try again');
     } finally {
@@ -66,13 +51,25 @@ export default function CreateGalleryModal({ children, onGalleryCreated }: { chi
     }
   };
 
+  const handleUploadComplete = async (url: string) => {
+    if (newGallery) {
+      try {
+        const updatedGallery = await updateGalleryCoverPhoto(newGallery.id, url);
+        onGalleryCreated(updatedGallery);
+        handleClose();
+      } catch (err) {
+        setError('Failed to update gallery cover photo');
+      }
+    }
+  };
+
   const handleClose = () => {
     setOpen(false);
+    setStep(1);
     setName('');
     setDescription('');
-    setSelectedFile(null);
-    setPreviewUrl(null);
     setError(null);
+    setNewGallery(null);
   }
 
   return (
@@ -82,91 +79,82 @@ export default function CreateGalleryModal({ children, onGalleryCreated }: { chi
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-center">Create New Gallery</DialogTitle>
+          <DialogTitle className="text-center">
+            {step === 1 ? 'Create New Gallery' : 'Add Cover Photo'}
+          </DialogTitle>
           <DialogDescription className="text-center">
-            Create a new gallery and add a cover photo to make it stand out.
+            {step === 1 ? 'Enter gallery details' : 'Upload a cover photo for your gallery'}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit}>
+        {step === 1 ? (
+          <form onSubmit={handleCreateGallery}>
+            <div className="grid gap-4 py-4">
+              <div className="flex flex-col space-y-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="flex flex-col space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Input
+                  id="description"
+                  name="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </div>
+            </div>
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            <DialogFooter>
+              <Button type="submit" disabled={isLoading} className="w-full">
+                {isLoading ? 'Creating...' : 'Create Gallery'}
+              </Button>
+            </DialogFooter>
+          </form>
+        ) : (
           <div className="grid gap-4 py-4">
             <div className="flex flex-col space-y-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                name="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </div>
-            <div className="flex flex-col space-y-2">
-              <Label htmlFor="description">Description</Label>
-              <Input
-                id="description"
-                name="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-              />
-            </div>
-            <div className="flex flex-col space-y-2">
               <Label>Cover Photo</Label>
-              {previewUrl ? (
-                <div className="relative w-full h-48">
-                  <Image
-                    src={previewUrl}
-                    alt="Gallery cover preview"
-                    layout="fill"
-                    objectFit="cover"
-                    className="rounded-md"
-                  />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    className="absolute top-2 right-2"
-                    onClick={() => {
-                      setSelectedFile(null);
-                      setPreviewUrl(null);
-                    }}
-                  >
-                    Change
-                  </Button>
-                </div>
-              ) : (
-                <div className="border-2 border-dashed border-gray-300 rounded-md p-4 text-center cursor-pointer">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFileSelect(file);
-                    }}
-                    id="cover-photo-input"
-                  />
-                  <label htmlFor="cover-photo-input" className="cursor-pointer">
-                    <Upload className="mx-auto h-12 w-12 text-gray-400" />
-                    <span className="mt-2 block text-sm font-medium text-gray-900">
-                      Click to upload a cover photo
-                    </span>
-                  </label>
-                </div>
+              {newGallery && (
+                <UploadDropZone
+                  galleryId={newGallery.id}
+                  type="galleryCoverUploader"
+                  onUploadComplete={handleUploadComplete}
+                />
               )}
             </div>
+            {error && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Error</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+            <DialogFooter className="flex flex-col sm:flex-row sm:justify-between">
+              <Button
+                onClick={() => setStep(1)}
+                variant="outline"
+                className="mb-2 sm:mb-0"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back
+              </Button>
+              <Button onClick={handleClose} variant="ghost">
+                Skip
+              </Button>
+            </DialogFooter>
           </div>
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          <DialogFooter>
-            <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? 'Creating...' : 'Create Gallery'}
-            </Button>
-          </DialogFooter>
-        </form>
+        )}
       </DialogContent>
     </Dialog>
   )

@@ -19,7 +19,7 @@ export async function createGallery(formData: FormData) {
     userId: user.userId,
   }).returning();
 
-  return gallery?.id
+  return gallery;
 }
 
 export async function getImages(galleryId: number) {
@@ -50,11 +50,12 @@ export async function updateGalleryCoverPhoto(galleryId: number, coverPhotoUrl: 
   const user = await auth();
   if (!user.userId) throw new Error("Unauthorized");
 
-  await db.update(galleries)
+  const [updatedGallery] = await db.update(galleries)
     .set({ coverPhotoUrl })
-    .where(and(eq(galleries.id, galleryId), eq(galleries.userId, user.userId)));
+    .where(and(eq(galleries.id, galleryId), eq(galleries.userId, user.userId)))
+    .returning();
 
-  return true;
+  return updatedGallery;
 }
 
 export async function deleteImage(imageId: number) {

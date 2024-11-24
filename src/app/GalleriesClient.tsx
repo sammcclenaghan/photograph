@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import { PlusIcon, Trash2Icon } from 'lucide-react'
-import { deleteGallery, createGallery } from "~/server/actions";
+import { deleteGallery } from "~/server/actions";
 import CreateGalleryModal from "./components/CreateGalleryModal";
 import { Button } from "~/components/ui/button";
 
@@ -20,7 +20,8 @@ export default function GalleriesClient({ initialGalleries }: { initialGalleries
   const router = useRouter();
 
   const handleGalleryCreated = async (newGallery: Gallery) => {
-    setGalleries(prevGalleries => [...prevGalleries, newGallery]);
+    setGalleries(prevGalleries => [newGallery, ...prevGalleries]);
+    router.refresh();
   };
 
   const handleDeleteGallery = async (galleryId: number) => {
