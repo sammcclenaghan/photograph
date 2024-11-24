@@ -3,10 +3,10 @@
 import { useCallback, useRef, useState } from "react"
 import { useUploadThing } from "~/utils/uploadthing"
 import { useRouter } from "next/navigation"
-import { Button } from "~/components/ui/button"
 import { Upload, X } from 'lucide-react'
 import { cn } from "~/lib/utils"
 import { Progress } from "~/components/ui/progress"
+import { mutate } from 'swr';
 
 type Input = Parameters<typeof useUploadThing>
 
@@ -15,18 +15,18 @@ export function UploadButton({
   type,
 }: {
   galleryId: number
-  type: "galleryImageUploader" | "galleryCoverUploader"
+  type: "galleryImageUploader" | "galleryCoverUploader",
 }) {
   const router = useRouter()
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { startUpload } = useUploadThing(type, {
-    onClientUploadComplete: () => {
+    onClientUploadComplete: async () => {
       console.log("Upload completed, refreshing page...")
       setIsUploading(false)
       setUploadProgress(0)
-      router.push(`/gallery/${galleryId}`)
+      await mutate(`/api/images?galleryId=${galleryId}`);
     },
     onUploadProgress: (progress) => {
       setUploadProgress(progress)

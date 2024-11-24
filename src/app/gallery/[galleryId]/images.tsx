@@ -1,12 +1,13 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useCallback } from 'react'
-import Image from 'next/image'
-import { useRouter } from 'next/navigation'
-import { getImages, deleteImage } from '~/server/actions'
-import { Loader2, ChevronLeft, ChevronRight, X, Trash2 } from 'lucide-react'
-import { Dialog, DialogContent, DialogTitle } from "~/components/ui/dialog"
-import { Button } from "~/components/ui/button"
+import { useState, useCallback } from 'react';
+import useSWR, { mutate } from 'swr';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { deleteImage } from '~/server/actions';
+import { Loader2, ChevronLeft, ChevronRight, X, Trash2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogTitle } from '~/components/ui/dialog';
+import { Button } from '~/components/ui/button';
 
 interface ImageProps {
   galleryId: number;
@@ -18,100 +19,86 @@ type ImageType = {
   name: string;
 };
 
+// Fetcher function for SWR
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 export default function Images({ galleryId }: ImageProps) {
-  const [images, setImages] = useState<ImageType[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [selectedImage, setSelectedImage] = useState<ImageType | null>(null)
-  const router = useRouter()
+  const router = useRouter();
+  const [selectedImage, setSelectedImage] = useState<ImageType | null>(null);
 
-  const fetchImages = useCallback(async () => {
-    try {
-      setIsLoading(true)
-      setError(null)
-      const fetchedImages = await getImages(galleryId)
-      setImages(fetchedImages)
-    } catch (err) {
-      console.error("Error fetching images:", err)
-      setError("Failed to load images. Please try again later.")
-    } finally {
-      setIsLoading(false)
-    }
-  }, [galleryId])
+  // Use SWR to fetch images
+  const { data: images, error, isLoading } = useSWR<ImageType[]>(
+    `/api/images?galleryId=${galleryId}`,
+    fetcher
+  );
 
-  useEffect(() => {
-    fetchImages()
-  }, [fetchImages])
-
-  useEffect(() => {
-    const handleRouteChange = () => {
-      router.refresh()
-    }
-    window.addEventListener('focus', handleRouteChange)
-    return () => {
-      window.removeEventListener('focus', handleRouteChange)
-    }
-  }, [router])
-
-  const openModal = useCallback((image: ImageType) => {
-    setSelectedImage(image)
-    router.push(`/gallery/${galleryId}?photoId=${image.id}`, { shallow: true })
-  }, [galleryId, router])
+  const openModal = useCallback(
+    (image: ImageType) => {
+      setSelectedImage(image);
+      router.push(`/gallery/${galleryId}?photoId=${image.id}`, { shallow: true });
+    },
+    [galleryId, router]
+  );
 
   const closeModal = useCallback(() => {
-    setSelectedImage(null)
-    router.push(`/gallery/${galleryId}`, { shallow: true })
-  }, [galleryId, router])
+    setSelectedImage(null);
+    router.push(`/gallery/${galleryId}`, { shallow: true });
+  }, [galleryId, router]);
 
-  const navigateImage = useCallback((direction: 'prev' | 'next') => {
-    if (!selectedImage) return
-    const currentIndex = images.findIndex(img => img.id === selectedImage.id)
-    let newIndex
-    if (direction === 'prev') {
-      newIndex = currentIndex > 0 ? currentIndex - 1 : images.length - 1
-    } else {
-      newIndex = currentIndex < images.length - 1 ? currentIndex + 1 : 0
-    }
-    setSelectedImage(images[newIndex])
-    router.push(`/gallery/${galleryId}?photoId=${images[newIndex].id}`, { shallow: true })
-  }, [selectedImage, images, galleryId, router])
-
-  const handleDeleteImage = useCallback(async (imageId: number) => {
-    try {
-      await deleteImage(imageId)
-      setImages(prevImages => prevImages.filter(img => img.id !== imageId))
-      alert("The image has been successfully deleted.")
-      if (selectedImage?.id === imageId) {
-        closeModal()
+  const navigateImage = useCallback(
+    (direction: 'prev' | 'next') => {
+      if (!selectedImage || !images) return;
+      const currentIndex = images.findIndex((img) => img.id === selectedImage.id);
+      let newIndex;
+      if (direction === 'prev') {
+        newIndex = currentIndex > 0 ? currentIndex - 1 : images.length - 1;
+      } else {
+        newIndex = currentIndex < images.length - 1 ? currentIndex + 1 : 0;
       }
-    } catch (error) {
-      console.error("Error deleting image:", error)
-      alert("Failed to delete the image. Please try again.")
-    }
-  }, [selectedImage, closeModal])
+      setSelectedImage(images[newIndex]);
+      router.push(`/gallery/${galleryId}?photoId=${images[newIndex].id}`, { shallow: true });
+    },
+    [selectedImage, images, galleryId, router]
+  );
+
+  const handleDeleteImage = useCallback(
+    async (imageId: number) => {
+      try {
+        await deleteImage(imageId);
+        // Revalidate images data
+        mutate(`/api/images?galleryId=${galleryId}`);
+        alert('The image has been successfully deleted.');
+        if (selectedImage?.id === imageId) {
+          closeModal();
+        }
+      } catch (error) {
+        console.error('Error deleting image:', error);
+        alert('Failed to delete the image. Please try again.');
+      }
+    },
+    [selectedImage, closeModal, galleryId]
+  );
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <Loader2 className="h-8 w-8 animate-spin text-zinc-500" />
       </div>
-    )
+    );
   }
 
   if (error) {
     return (
       <div className="text-center text-red-500 p-4">
-        {error}
+        Failed to load images. Please try again later.
       </div>
-    )
+    );
   }
 
-  if (images.length === 0) {
+  if (!images || images.length === 0) {
     return (
-      <div className="text-center text-zinc-500 p-4">
-        No images in this gallery yet.
-      </div>
-    )
+      <div className="text-center text-zinc-500 p-4">No images in this gallery yet.</div>
+    );
   }
 
   return (
@@ -137,8 +124,8 @@ export default function Images({ galleryId }: ImageProps) {
                 size="icon"
                 className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
                 onClick={(e) => {
-                  e.stopPropagation()
-                  handleDeleteImage(image.id)
+                  e.stopPropagation();
+                  handleDeleteImage(image.id);
                 }}
                 aria-label="Delete image"
               >
@@ -202,5 +189,5 @@ export default function Images({ galleryId }: ImageProps) {
         </DialogContent>
       </Dialog>
     </>
-  )
+  );
 }
