@@ -58,6 +58,22 @@ export async function updateGalleryCoverPhoto(galleryId: number, coverPhotoUrl: 
   return updatedGallery;
 }
 
+export async function updateGallery(galleryId: number, formData: FormData) {
+  const user = await auth();
+  if (!user.userId) throw new Error("Unauthorized");
+
+  const name = formData.get("name") as string;
+  const description = formData.get("description") as string || "";
+  if (!name) throw new Error("Gallery name is required");
+
+  const [updatedGallery] = await db.update(galleries)
+    .set({ name, description })
+    .where(and(eq(galleries.id, galleryId), eq(galleries.userId, user.userId)))
+    .returning()
+
+  return updatedGallery;
+}
+
 export async function deleteImage(imageId: number) {
   const user = await auth();
   if (!user.userId) throw new Error("Unauthorized");

@@ -8,6 +8,7 @@ import { deleteImage } from '~/server/actions';
 import { Loader2, ChevronLeft, ChevronRight, X, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '~/components/ui/dialog';
 import { Button } from '~/components/ui/button';
+import { useToast } from "~/hooks/use-toast"
 
 interface ImageProps {
   galleryId: number;
@@ -25,6 +26,7 @@ const fetcher = (url: string) => fetch(url).then((res) => res.json());
 export default function Images({ galleryId }: ImageProps) {
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState<ImageType | null>(null);
+  const { toast } = useToast();
 
   // Use SWR to fetch images
   const { data: images, error, isLoading } = useSWR<ImageType[]>(
@@ -66,14 +68,18 @@ export default function Images({ galleryId }: ImageProps) {
       try {
         await deleteImage(imageId);
         // Revalidate images data
-        mutate(`/api/images?galleryId=${galleryId}`);
-        alert('The image has been successfully deleted.');
+        await mutate(`/api/images?galleryId=${galleryId}`);
+        toast({ title: "Image deleted", description: "The image has been successfuly deleted!", variant: "default" })
         if (selectedImage?.id === imageId) {
           closeModal();
         }
       } catch (error) {
         console.error('Error deleting image:', error);
-        alert('Failed to delete the image. Please try again.');
+        toast({
+          title: "Error",
+          description: "Failed to delete the image. Please try again.",
+          variant: "destructive",
+        });
       }
     },
     [selectedImage, closeModal, galleryId]
