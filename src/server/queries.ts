@@ -45,7 +45,7 @@ export async function getGallery(id: number) {
 
 export async function getGalleries() {
   const user = await auth();
-  if (!user.userId) throw new Error("Unauthorized");
+  if (!user.userId) return null;
 
   const galleries = await db.query.galleries.findMany({
     where: (model, { eq }) => eq(model.userId, user.userId),

@@ -19,7 +19,6 @@ export default async function GalleryPage({ params }: Props) {
   const gallery = await getGallery(galleryIdNum);
 
   if (!gallery) {
-    // Handle the case where the gallery does not exist
     notFound();
   }
 
