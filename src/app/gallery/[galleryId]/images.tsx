@@ -119,6 +119,7 @@ export default function Images({ galleryId }: ImageProps) {
               >
                 <Image
                   src={image.url}
+                  style={{ transform: "translate3d(0, 0, 0)" }}
                   alt={image.name}
                   width={500}
                   height={500}

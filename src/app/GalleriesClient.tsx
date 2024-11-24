@@ -7,6 +7,7 @@ import { PlusIcon, Trash2Icon } from 'lucide-react'
 import { deleteGallery } from "~/server/actions";
 import CreateGalleryModal from "./components/CreateGalleryModal";
 import { Button } from "~/components/ui/button";
+import { useToast } from "~/hooks/use-toast"
 
 type Gallery = {
   id: number;
@@ -18,15 +19,18 @@ type Gallery = {
 export default function GalleriesClient({ initialGalleries }: { initialGalleries: Gallery[] }) {
   const [galleries, setGalleries] = useState(initialGalleries);
   const router = useRouter();
+  const { toast } = useToast();
 
   const handleGalleryCreated = async (newGallery: Gallery) => {
     setGalleries(prevGalleries => [newGallery, ...prevGalleries]);
     router.refresh();
+    toast({ description: "You have successfully created a gallery!", variant: "default" })
   };
 
   const handleDeleteGallery = async (galleryId: number) => {
     await deleteGallery(galleryId);
     setGalleries(prevGalleries => prevGalleries.filter(gallery => gallery.id !== galleryId));
+    toast({ description: "You have successfully deleted a gallery!", variant: "destructive" })
   };
 
   if (galleries.length === 0) {

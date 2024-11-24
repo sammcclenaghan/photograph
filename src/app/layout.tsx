@@ -6,6 +6,7 @@ import { ClerkProvider } from '@clerk/nextjs'
 import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { extractRouterConfig } from "uploadthing/server";
 import { ourFileRouter } from "./api/uploadthing/core";
+import { Toaster } from "~/components/ui/toaster";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -36,6 +37,7 @@ export default function RootLayout({
             <Header />
             <main className="flex-1 overflow-y-auto">
               {children}
+              <Toaster />
             </main>
             {modal}
           </div>
