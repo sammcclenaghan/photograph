@@ -54,6 +54,11 @@ export async function getGalleries() {
   return galleries;
 }
 
+export async function getGalleryName(galleryId: number) {
+  const gallery = await getGallery(galleryId)
+  return gallery.name
+}
+
 export async function getGalleryWithImages(galleryId: number) {
   const user = await auth();
   if (!user.userId) throw new Error("Unauthorized");

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from 'next/navigation';
 import { PlusIcon, Trash2Icon } from 'lucide-react'
 import { deleteGallery } from "~/server/actions";
-import CreateGalleryModal from "./components/CreateGalleryModal";
+import CreateGalleryModal from "./CreateGalleryModal";
 import { Button } from "~/components/ui/button";
 import { useToast } from "~/hooks/use-toast"
 

@@ -1,8 +1,7 @@
-import { auth } from "@clerk/nextjs";
 import { getGalleries } from "~/server/queries";
 import { SignedIn, SignedOut } from "@clerk/nextjs";
 import LandingPage from "./components/LandingPage";
-import GalleriesClient from "./GalleriesClient";
+import GalleriesClient from "~/app/components/GalleriesClient";
 
 export const dynamic = "force-dynamic";
 
