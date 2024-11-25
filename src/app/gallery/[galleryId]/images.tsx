@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import useSWR, { mutate } from 'swr';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -9,6 +9,7 @@ import { Loader2, ChevronLeft, ChevronRight, X, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '~/components/ui/dialog';
 import { Button } from '~/components/ui/button';
 import { useToast } from "~/hooks/use-toast"
+import { motion, AnimatePresence, usePresence } from "motion/react"
 
 interface ImageProps {
   galleryId: number;
@@ -20,15 +21,59 @@ type ImageType = {
   name: string;
 };
 
-// Fetcher function for SWR
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+const ImageItem = ({ image, onDelete, onClick }: { image: ImageType; onDelete: (id: number) => void; onClick: () => void }) => {
+  const [isPresent, safeToRemove] = usePresence();
+
+  useEffect(() => {
+    !isPresent && setTimeout(safeToRemove, 1000);
+  }, [isPresent, safeToRemove]);
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
+      transition={{ duration: 0.3 }}
+      className="break-inside-avoid mb-4"
+    >
+      <div className="relative group">
+        <div
+          className="rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer"
+          onClick={onClick}
+        >
+          <Image
+            src={image.url}
+            alt={image.name}
+            width={500}
+            height={500}
+            className="w-full h-auto object-cover"
+          />
+        </div>
+        <Button
+          variant="destructive"
+          size="icon"
+          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete(image.id);
+          }}
+          aria-label="Delete image"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
+    </motion.div>
+  );
+};
 
 export default function Images({ galleryId }: ImageProps) {
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState<ImageType | null>(null);
   const { toast } = useToast();
 
-  // Use SWR to fetch images
   const { data: images, error, isLoading } = useSWR<ImageType[]>(
     `/api/images?galleryId=${galleryId}`,
     fetcher
@@ -67,9 +112,7 @@ export default function Images({ galleryId }: ImageProps) {
     async (imageId: number) => {
       try {
         await deleteImage(imageId);
-        // Revalidate images data
         await mutate(`/api/images?galleryId=${galleryId}`);
-        toast({ title: "Image deleted", description: "The image has been successfuly deleted!", variant: "default" })
         if (selectedImage?.id === imageId) {
           closeModal();
         }
@@ -82,7 +125,7 @@ export default function Images({ galleryId }: ImageProps) {
         });
       }
     },
-    [selectedImage, closeModal, galleryId]
+    [selectedImage, closeModal, galleryId, toast]
   );
 
   if (isLoading) {
@@ -110,37 +153,16 @@ export default function Images({ galleryId }: ImageProps) {
   return (
     <>
       <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4">
-        {images.map((image) => (
-          <div key={image.id} className="break-inside-avoid mb-4">
-            <div className="relative group">
-              <div
-                className="rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer"
-                onClick={() => openModal(image)}
-              >
-                <Image
-                  src={image.url}
-                  style={{ transform: "translate3d(0, 0, 0)" }}
-                  alt={image.name}
-                  width={500}
-                  height={500}
-                  className="w-full h-auto object-cover"
-                />
-              </div>
-              <Button
-                variant="destructive"
-                size="icon"
-                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteImage(image.id);
-                }}
-                aria-label="Delete image"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        ))}
+        <AnimatePresence mode="popLayout">
+          {images.map((image) => (
+            <ImageItem
+              key={image.id}
+              image={image}
+              onDelete={handleDeleteImage}
+              onClick={() => openModal(image)}
+            />
+          ))}
+        </AnimatePresence>
       </div>
 
       <Dialog open={!!selectedImage} onOpenChange={closeModal}>
