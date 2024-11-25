@@ -7,6 +7,7 @@ import { NextSSRPlugin } from "@uploadthing/react/next-ssr-plugin";
 import { extractRouterConfig } from "uploadthing/server";
 import { ourFileRouter } from "./api/uploadthing/core";
 import { Toaster } from "~/components/ui/toaster";
+import { dark } from '@clerk/themes'
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -21,14 +22,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-  modal,
 }: {
   children: React.ReactNode;
-  modal: React.ReactNode;
 }) {
   return (
-    <ClerkProvider>
-      <html lang="en" suppressHydrationWarning className={outfit.className}>
+    <html lang="en" suppressHydrationWarning className={outfit.className}>
+      <ClerkProvider
+        appearance={{
+          baseTheme: dark,
+        }}>
         <body className={`font-sans antialiased`}>
           <NextSSRPlugin
             routerConfig={extractRouterConfig(ourFileRouter)}
@@ -39,11 +41,10 @@ export default function RootLayout({
               {children}
               <Toaster />
             </main>
-            {modal}
           </div>
           <div id="modal-root" />
         </body>
-      </html>
-    </ClerkProvider>
+      </ClerkProvider>
+    </html>
   );
 }

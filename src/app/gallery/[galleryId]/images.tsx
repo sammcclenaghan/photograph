@@ -27,6 +27,7 @@ export default function Images({ galleryId }: ImageProps) {
   const router = useRouter();
   const [selectedImage, setSelectedImage] = useState<ImageType | null>(null);
   const { toast } = useToast();
+  const galleryName = await getGalleryName()
 
   // Use SWR to fetch images
   const { data: images, error, isLoading } = useSWR<ImageType[]>(
