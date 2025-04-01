@@ -8,6 +8,7 @@ import { extractRouterConfig } from "uploadthing/server";
 import { ourFileRouter } from "./api/uploadthing/core";
 import { Toaster } from "~/components/ui/toaster";
 import { dark } from '@clerk/themes'
+import { ThemeProvider } from "~/components/theme-provider";
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -27,24 +28,31 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning className={outfit.className}>
-      <ClerkProvider
-        appearance={{
-          baseTheme: dark,
-        }}>
-        <body className={`font-sans antialiased`}>
-          <NextSSRPlugin
-            routerConfig={extractRouterConfig(ourFileRouter)}
-          />
-          <div className="flex min-h-screen flex-col">
-            <Header />
-            <main className="flex-1 overflow-y-auto">
-              {children}
-              <Toaster />
-            </main>
-          </div>
-          <div id="modal-root" />
+        <body className="font-sans antialiased">
+        <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+          <ClerkProvider
+            appearance={{
+              baseTheme: dark,
+            }}>
+              <NextSSRPlugin
+                routerConfig={extractRouterConfig(ourFileRouter)}
+              />
+              <div className="flex min-h-screen flex-col">
+                <Header />
+                <main className="flex-1 overflow-y-auto">
+                  {children}
+                  <Toaster />
+                </main>
+              </div>
+              <div id="modal-root" />
+          </ClerkProvider>
+          </ThemeProvider>
         </body>
-      </ClerkProvider>
     </html>
   );
 }

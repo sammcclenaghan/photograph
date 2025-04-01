@@ -221,7 +221,7 @@ export default function CreateGalleryModal({
                   <Label>Cover Photo</Label>
                   {newGallery && newGallery.coverPhotoUrl && (
                     <div className="mb-4">
-                      <p className="text-sm mb-2 text-gray-500">Current cover photo:</p>
+                      <p className="text-sm mb-2 text-muted-foreground">Current cover photo:</p>
                       <div className="relative w-full h-48 overflow-hidden rounded-md">
                         <img
                           src={newGallery.coverPhotoUrl}
@@ -233,7 +233,7 @@ export default function CreateGalleryModal({
                   )}
                   {newGallery && (
                     <div className="mt-2">
-                      <p className="text-sm mb-2">Upload new cover photo:</p>
+                      <p className="text-sm mb-2 text-foreground">Upload new cover photo:</p>
                       <UploadDropZone
                         galleryId={newGallery.id}
                         type="galleryCoverUploader"
@@ -255,7 +255,7 @@ export default function CreateGalleryModal({
                       className="h-12 cursor-pointer"
                     />
                     <div 
-                      className="w-full h-36 rounded-md border border-gray-200" 
+                      className="w-full h-36 rounded-md border border-input" 
                       style={{ backgroundColor: selectedColor }}
                     />
                     <Button onClick={handleColorSelected} disabled={isLoading}>
