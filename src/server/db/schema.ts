@@ -26,6 +26,7 @@ export const galleries = createTable(
     description: varchar("description", { length: 265 }),
     userId: varchar("userId", { length: 256 }).notNull(),
     coverPhotoUrl: varchar("cover_photo_url", { length: 256 }),
+    coverColor: varchar("cover_color", { length: 7 }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .default(sql`CURRENT_TIMESTAMP`)
       .notNull(),

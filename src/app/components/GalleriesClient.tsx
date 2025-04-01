@@ -14,6 +14,7 @@ type Gallery = {
   name: string;
   description: string;
   coverPhotoUrl: string | null;
+  coverColor: string | null;
 };
 
 export default function GalleriesClient({ initialGalleries }: { initialGalleries: Gallery[] }) {
@@ -55,18 +56,21 @@ export default function GalleriesClient({ initialGalleries }: { initialGalleries
             <div key={gallery.id} className="relative group">
               <Link href={`gallery/${gallery.id}`}>
                 <div className="relative">
-                  <div className="relative h-72 w-full overflow-hidden rounded-lg flex items-center justify-center">
+                  <div 
+                    className="relative h-72 w-full overflow-hidden rounded-lg flex items-center justify-center"
+                    style={gallery.coverColor ? { backgroundColor: gallery.coverColor } : {}}
+                  >
                     {gallery.coverPhotoUrl ? (
                       <img
                         src={gallery.coverPhotoUrl}
                         alt={gallery.name}
                         className="object-cover w-full h-full"
                       />
-                    ) : (
-                      <span className="text-center">No Cover Photo</span>
-                    )}
-                    <div className="absolute inset-0 bg-black bg-opacity-30 flex items-end p-4">
-                      <h3 className="text-lg font-semibold text-white">{gallery.name}</h3>
+                    ) : !gallery.coverColor ? (
+                      <span className="text-center text-gray-500">No Cover</span>
+                    ) : null}
+                    <div className={`absolute inset-0 ${!gallery.coverColor ? 'bg-black bg-opacity-30' : 'bg-opacity-20'} flex items-end p-4`}>
+                      <h3 className="text-lg font-semibold text-white drop-shadow-md">{gallery.name}</h3>
                     </div>
                   </div>
                   <div className="mt-2">

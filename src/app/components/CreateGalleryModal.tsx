@@ -8,9 +8,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from '~/components/ui/input';
 import { Textarea } from '~/components/ui/textarea'
 import { Label } from '~/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { useRouter } from 'next/navigation';
 
-import { createGallery, updateGallery, updateGalleryCoverPhoto } from '~/server/actions';
+import { createGallery, updateGallery, updateGalleryCoverPhoto, updateGalleryCoverColor } from '~/server/actions';
 import UploadDropZone from './UploadDropZone';
 
 type Gallery = {
@@ -18,6 +19,7 @@ type Gallery = {
   name: string;
   description: string;
   coverPhotoUrl: string | null;
+  coverColor: string | null;
 };
 
 export default function CreateGalleryModal({ children, onGalleryCreated }: { children: React.ReactNode, onGalleryCreated: (gallery: Gallery) => void }) {
@@ -28,6 +30,8 @@ export default function CreateGalleryModal({ children, onGalleryCreated }: { chi
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newGallery, setNewGallery] = useState<Gallery | null>(null);
+  const [selectedColor, setSelectedColor] = useState('#6366F1'); // Default indigo color
+  const [coverOption, setCoverOption] = useState<'photo' | 'color'>('photo');
   const router = useRouter();
 
   const handleCreateOrUpdateGallery = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -73,6 +77,22 @@ export default function CreateGalleryModal({ children, onGalleryCreated }: { chi
     }
   };
 
+  const handleColorSelected = async () => {
+    if (newGallery) {
+      try {
+        setIsLoading(true);
+        const updatedGallery = await updateGalleryCoverColor(newGallery.id, selectedColor);
+        onGalleryCreated(updatedGallery);
+        setOpen(false);
+        resetState();
+      } catch (err) {
+        setError('Failed to update gallery cover color');
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  };
+
   const handleClose = () => {
     if (newGallery) {
       onGalleryCreated(newGallery);
@@ -87,6 +107,8 @@ export default function CreateGalleryModal({ children, onGalleryCreated }: { chi
     setDescription('');
     setError(null);
     setNewGallery(null);
+    setSelectedColor('#6366F1');
+    setCoverOption('photo');
   };
 
   const handleBack = () => {
@@ -105,10 +127,10 @@ export default function CreateGalleryModal({ children, onGalleryCreated }: { chi
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="text-center">
-            {step === 1 ? (newGallery ? 'Edit Gallery' : 'Create New Gallery') : 'Add Cover Photo'}
+            {step === 1 ? (newGallery ? 'Edit Gallery' : 'Create New Gallery') : 'Gallery Cover'}
           </DialogTitle>
           <DialogDescription className="text-center">
-            {step === 1 ? 'Enter gallery details' : 'Upload a cover photo for your gallery'}
+            {step === 1 ? 'Enter gallery details' : 'Choose a cover photo or color for your gallery'}
           </DialogDescription>
         </DialogHeader>
         {step === 1 ? (
@@ -149,16 +171,46 @@ export default function CreateGalleryModal({ children, onGalleryCreated }: { chi
           </form>
         ) : (
           <div className="grid gap-4 py-4">
-            <div className="flex flex-col space-y-2">
-              <Label>Cover Photo</Label>
-              {newGallery && (
-                <UploadDropZone
-                  galleryId={newGallery.id}
-                  type="galleryCoverUploader"
-                  onUploadComplete={handleUploadComplete}
-                />
-              )}
-            </div>
+            <Tabs defaultValue="photo" value={coverOption} onValueChange={(value) => setCoverOption(value as 'photo' | 'color')}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="photo">Photo</TabsTrigger>
+                <TabsTrigger value="color">Color</TabsTrigger>
+              </TabsList>
+              <TabsContent value="photo" className="pt-4">
+                <div className="flex flex-col space-y-2">
+                  <Label>Cover Photo</Label>
+                  {newGallery && (
+                    <UploadDropZone
+                      galleryId={newGallery.id}
+                      type="galleryCoverUploader"
+                      onUploadComplete={handleUploadComplete}
+                    />
+                  )}
+                </div>
+              </TabsContent>
+              <TabsContent value="color" className="pt-4">
+                <div className="flex flex-col space-y-4">
+                  <Label htmlFor="coverColor">Cover Color</Label>
+                  <div className="flex flex-col space-y-4">
+                    <Input
+                      type="color"
+                      id="coverColor"
+                      value={selectedColor}
+                      onChange={(e) => setSelectedColor(e.target.value)}
+                      className="h-12 cursor-pointer"
+                    />
+                    <div 
+                      className="w-full h-32 rounded-md border border-gray-200" 
+                      style={{ backgroundColor: selectedColor }}
+                    />
+                    <Button onClick={handleColorSelected} disabled={isLoading}>
+                      {isLoading ? 'Saving...' : 'Use Color'}
+                    </Button>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+            
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
