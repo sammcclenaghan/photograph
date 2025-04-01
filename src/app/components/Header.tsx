@@ -8,6 +8,7 @@ import {
 } from '@clerk/nextjs'
 import Link from 'next/link';
 import { ThemeToggle } from '~/components/ui/theme-toggle';
+import PendingInvitationsNotification from './PendingInvitationsNotification';
 
 export default function Header() {
   return (
@@ -18,12 +19,15 @@ export default function Header() {
       
       <div className="flex items-center gap-4">
         <ThemeToggle />
+        
+        <SignedIn>
+          <PendingInvitationsNotification />
+          <UserButton />
+        </SignedIn>
+        
         <SignedOut>
           <SignInButton />
         </SignedOut>
-        <SignedIn>
-          <UserButton />
-        </SignedIn>
       </div>
     </nav>
   )

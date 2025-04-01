@@ -8,6 +8,7 @@ import {
   pgTableCreator,
   timestamp,
   varchar,
+  primaryKey,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -42,6 +43,42 @@ export const galleries = createTable(
 
 export const galleriesRelations = relations(galleries, ({ many }) => ({
   images: many(images),
+  collaborators: many(galleryCollaborators),
+}));
+
+// Available permission roles for collaborators
+export type CollaboratorRole = 'viewer' | 'editor' | 'admin';
+
+// Gallery collaborators table to manage shared access
+export const galleryCollaborators = createTable(
+  "gallery_collaborators",
+  {
+    galleryId: integer("gallery_id")
+      .references(() => galleries.id, { onDelete: "cascade" })
+      .notNull(),
+    userId: varchar("user_id", { length: 256 }).notNull(),
+    role: varchar("role", { length: 20 }).notNull().$type<CollaboratorRole>().default('viewer'),
+    invitedBy: varchar("invited_by", { length: 256 }).notNull(),
+    email: varchar("email", { length: 256 }),
+    invitedAt: timestamp("invited_at", { withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.galleryId, t.userId] }),
+    galleryIdIndex: index("gallery_collaborator_gallery_id_idx").on(t.galleryId),
+    userIdIndex: index("gallery_collaborator_user_id_idx").on(t.userId),
+  })
+);
+
+export const galleryCollaboratorsRelations = relations(galleryCollaborators, ({ one }) => ({
+  gallery: one(galleries, {
+    fields: [galleryCollaborators.galleryId],
+    references: [galleries.id],
+  }),
 }));
 
 /** Updated definition of the `images` table to include `galleryId` */
