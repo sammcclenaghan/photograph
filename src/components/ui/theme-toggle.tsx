@@ -19,7 +19,7 @@ export function ThemeToggle() {
     setIsChanging(true)
     setTimeout(() => {
       setTheme(theme === "dark" ? "light" : "dark")
-      setTimeout(() => setIsChanging(false), 600)
+      setTimeout(() => setIsChanging(false), 300)
     }, 100)
   }
 
@@ -39,9 +39,9 @@ export function ThemeToggle() {
       disabled={isChanging}
     >
       <div className="relative w-[1.2rem] h-[1.2rem]">
-        {/* Sun */}
+        {/* Sun - show in light mode */}
         <Sun 
-          className={`absolute top-0 left-0 h-full w-full transition-all duration-500 ease-in-out
+          className={`absolute top-0 left-0 h-full w-full transition-all duration-200 ease-in-out
             ${isDark 
               ? "opacity-0 translate-x-full" 
               : isChanging 
@@ -50,9 +50,9 @@ export function ThemeToggle() {
             }`}
         />
         
-        {/* Moon */}
+        {/* Moon - show in dark mode */}
         <Moon 
-          className={`absolute top-0 left-0 h-full w-full transition-all duration-500 ease-in-out
+          className={`absolute top-0 left-0 h-full w-full transition-all duration-200 ease-in-out
             ${!isDark 
               ? "opacity-0 -translate-x-full" 
               : isChanging 
@@ -62,7 +62,7 @@ export function ThemeToggle() {
         />
         
         {/* Horizon line (optional) */}
-        <div className={`absolute top-1/2 left-0 w-full h-[1px] bg-foreground/20 transition-opacity duration-300 
+        <div className={`absolute top-1/2 left-0 w-full h-[1px] bg-foreground/20 transition-opacity duration-100 
           ${isChanging ? "opacity-100" : "opacity-0"}`} />
       </div>
     </Button>
