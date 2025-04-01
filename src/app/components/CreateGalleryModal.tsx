@@ -1,7 +1,7 @@
 'use client'
 
 import { AlertCircle, ArrowLeft } from 'lucide-react';
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Alert, AlertDescription, AlertTitle } from '~/components/ui/alert';
 import { Button } from '~/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogTrigger } from '~/components/ui/dialog';
@@ -17,12 +17,24 @@ import UploadDropZone from './UploadDropZone';
 type Gallery = {
   id: number;
   name: string;
-  description: string;
+  description: string | null;
   coverPhotoUrl: string | null;
   coverColor: string | null;
 };
 
-export default function CreateGalleryModal({ children, onGalleryCreated }: { children: React.ReactNode, onGalleryCreated: (gallery: Gallery) => void }) {
+interface CreateGalleryModalProps {
+  children: React.ReactNode;
+  onGalleryCreated: (gallery: Gallery) => void;
+  initialGallery?: Gallery;
+  mode?: 'create' | 'edit';
+}
+
+export default function CreateGalleryModal({ 
+  children, 
+  onGalleryCreated,
+  initialGallery,
+  mode = 'create'
+}: CreateGalleryModalProps) {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
@@ -33,6 +45,27 @@ export default function CreateGalleryModal({ children, onGalleryCreated }: { chi
   const [selectedColor, setSelectedColor] = useState('#6366F1'); // Default indigo color
   const [coverOption, setCoverOption] = useState<'photo' | 'color'>('photo');
   const router = useRouter();
+
+  // Initialize with gallery data if in edit mode
+  useEffect(() => {
+    if (initialGallery && open) {
+      setName(initialGallery.name);
+      setDescription(initialGallery.description || '');
+      setNewGallery(initialGallery);
+      
+      if (initialGallery.coverColor) {
+        setSelectedColor(initialGallery.coverColor);
+        setCoverOption('color');
+      } else {
+        setCoverOption('photo');
+      }
+      
+      // If we're editing and have an initial gallery, we may want to allow directly editing the cover
+      if (mode === 'edit' && initialGallery.id) {
+        setStep(initialGallery.coverPhotoUrl || initialGallery.coverColor ? 2 : 1);
+      }
+    }
+  }, [initialGallery, open, mode]);
 
   const handleCreateOrUpdateGallery = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -106,7 +139,9 @@ export default function CreateGalleryModal({ children, onGalleryCreated }: { chi
     setName('');
     setDescription('');
     setError(null);
-    setNewGallery(null);
+    if (!initialGallery) {
+      setNewGallery(null);
+    }
     setSelectedColor('#6366F1');
     setCoverOption('photo');
   };
@@ -115,7 +150,7 @@ export default function CreateGalleryModal({ children, onGalleryCreated }: { chi
     setStep(1);
     if (newGallery) {
       setName(newGallery.name);
-      setDescription(newGallery.description);
+      setDescription(newGallery.description || '');
     }
   }
 
@@ -124,10 +159,10 @@ export default function CreateGalleryModal({ children, onGalleryCreated }: { chi
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-center">
-            {step === 1 ? (newGallery ? 'Edit Gallery' : 'Create New Gallery') : 'Gallery Cover'}
+            {step === 1 ? (mode === 'edit' ? 'Edit Gallery' : 'Create New Gallery') : 'Gallery Cover'}
           </DialogTitle>
           <DialogDescription className="text-center">
             {step === 1 ? 'Enter gallery details' : 'Choose a cover photo or color for your gallery'}
@@ -153,6 +188,7 @@ export default function CreateGalleryModal({ children, onGalleryCreated }: { chi
                   name="description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                  className="min-h-[120px]"
                 />
               </div>
             </div>
@@ -163,28 +199,47 @@ export default function CreateGalleryModal({ children, onGalleryCreated }: { chi
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-            <DialogFooter>
+            <DialogFooter className="mt-4">
               <Button type="submit" disabled={isLoading} className="w-full">
-                {isLoading ? 'Saving...' : (newGallery ? 'Update Gallery' : 'Create Gallery')}
+                {isLoading ? 'Saving...' : (mode === 'edit' ? 'Update Gallery' : 'Create Gallery')}
               </Button>
             </DialogFooter>
           </form>
         ) : (
           <div className="grid gap-4 py-4">
-            <Tabs defaultValue="photo" value={coverOption} onValueChange={(value) => setCoverOption(value as 'photo' | 'color')}>
+            <Tabs 
+              defaultValue="photo" 
+              value={coverOption} 
+              onValueChange={(value) => setCoverOption(value as 'photo' | 'color')}
+            >
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="photo">Photo</TabsTrigger>
                 <TabsTrigger value="color">Color</TabsTrigger>
               </TabsList>
               <TabsContent value="photo" className="pt-4">
-                <div className="flex flex-col space-y-2">
+                <div className="flex flex-col space-y-4">
                   <Label>Cover Photo</Label>
+                  {newGallery && newGallery.coverPhotoUrl && (
+                    <div className="mb-4">
+                      <p className="text-sm mb-2 text-gray-500">Current cover photo:</p>
+                      <div className="relative w-full h-48 overflow-hidden rounded-md">
+                        <img
+                          src={newGallery.coverPhotoUrl}
+                          alt="Current cover"
+                          className="object-cover w-full h-full"
+                        />
+                      </div>
+                    </div>
+                  )}
                   {newGallery && (
-                    <UploadDropZone
-                      galleryId={newGallery.id}
-                      type="galleryCoverUploader"
-                      onUploadComplete={handleUploadComplete}
-                    />
+                    <div className="mt-2">
+                      <p className="text-sm mb-2">Upload new cover photo:</p>
+                      <UploadDropZone
+                        galleryId={newGallery.id}
+                        type="galleryCoverUploader"
+                        onUploadComplete={handleUploadComplete}
+                      />
+                    </div>
                   )}
                 </div>
               </TabsContent>
@@ -200,7 +255,7 @@ export default function CreateGalleryModal({ children, onGalleryCreated }: { chi
                       className="h-12 cursor-pointer"
                     />
                     <div 
-                      className="w-full h-32 rounded-md border border-gray-200" 
+                      className="w-full h-36 rounded-md border border-gray-200" 
                       style={{ backgroundColor: selectedColor }}
                     />
                     <Button onClick={handleColorSelected} disabled={isLoading}>
@@ -218,7 +273,7 @@ export default function CreateGalleryModal({ children, onGalleryCreated }: { chi
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
-            <DialogFooter className="flex flex-col sm:flex-row sm:justify-between">
+            <DialogFooter className="flex flex-col sm:flex-row sm:justify-between mt-4">
               <Button
                 onClick={handleBack}
                 variant="outline"
@@ -230,7 +285,7 @@ export default function CreateGalleryModal({ children, onGalleryCreated }: { chi
                 onClick={handleClose}
                 variant="ghost"
               >
-                Skip
+                {mode === 'edit' ? 'Done' : 'Skip'}
               </Button>
             </DialogFooter>
           </div>
