@@ -1,7 +1,7 @@
 "use server"
 
 import { db } from "~/server/db";
-import { galleries, images, galleryCollaborators } from "~/server/db/schema";
+import { galleries, images, galleryCollaborators, exhibitions, exhibitionImagePositions } from "~/server/db/schema";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { and, eq, or } from "drizzle-orm";
 import { checkGalleryAccess, hasEditPermission } from "./queries";
@@ -312,4 +312,253 @@ export async function removeCollaborator(galleryId: number, collaboratorId: stri
     ));
     
   return { success: true };
+}
+
+// Exhibition actions
+export async function createExhibition(params: {
+  name: string;
+  description?: string;
+  galleryId: number;
+  layoutType: string;
+}) {
+  const { userId } = auth();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  const { name, description, galleryId, layoutType } = params;
+
+  try {
+    const result = await db
+      .insert(exhibitions)
+      .values({
+        name,
+        description,
+        galleryId,
+        userId,
+        layoutType,
+      })
+      .returning();
+
+    return result[0];
+  } catch (error) {
+    console.error("Failed to create exhibition:", error);
+    throw new Error("Failed to create exhibition");
+  }
+}
+
+export async function updateExhibition(params: {
+  id: number;
+  name?: string;
+  description?: string;
+  layoutType?: string;
+  isPublished?: number;
+}) {
+  const { userId } = auth();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  const { id, ...updateData } = params;
+
+  try {
+    // First verify the user has access to this exhibition
+    const exhibition = await db.query.exhibitions.findFirst({
+      where: eq(exhibitions.id, id),
+    });
+
+    if (!exhibition || exhibition.userId !== userId) {
+      // Check if user is a collaborator with appropriate permissions
+      const isCollaborator = await db.query.galleryCollaborators.findFirst({
+        where: and(
+          eq(galleryCollaborators.userId, userId),
+          eq(galleryCollaborators.galleryId, exhibition?.galleryId ?? 0),
+          or(
+            eq(galleryCollaborators.role, 'editor'),
+            eq(galleryCollaborators.role, 'admin')
+          )
+        ),
+      });
+
+      if (!isCollaborator) {
+        throw new Error("Unauthorized");
+      }
+    }
+
+    // Perform the update
+    const result = await db
+      .update(exhibitions)
+      .set({
+        ...updateData,
+        updatedAt: new Date(),
+      })
+      .where(eq(exhibitions.id, id))
+      .returning();
+
+    return result[0];
+  } catch (error) {
+    console.error("Failed to update exhibition:", error);
+    throw new Error("Failed to update exhibition");
+  }
+}
+
+export async function deleteExhibition(id: number) {
+  const { userId } = auth();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  try {
+    // First verify the user has access to this exhibition
+    const exhibition = await db.query.exhibitions.findFirst({
+      where: eq(exhibitions.id, id),
+    });
+
+    if (!exhibition || exhibition.userId !== userId) {
+      // Check if user is a collaborator with admin permissions
+      const isCollaborator = await db.query.galleryCollaborators.findFirst({
+        where: and(
+          eq(galleryCollaborators.userId, userId),
+          eq(galleryCollaborators.galleryId, exhibition?.galleryId ?? 0),
+          eq(galleryCollaborators.role, 'admin')
+        ),
+      });
+
+      if (!isCollaborator) {
+        throw new Error("Unauthorized");
+      }
+    }
+
+    await db
+      .delete(exhibitions)
+      .where(eq(exhibitions.id, id));
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to delete exhibition:", error);
+    throw new Error("Failed to delete exhibition");
+  }
+}
+
+export async function saveImagePositions(params: {
+  exhibitionId: number;
+  positions: Array<{
+    imageId: number;
+    posX: number;
+    posY: number;
+    posZ?: number;
+    width?: number;
+    height?: number;
+    rotation?: number;
+    zIndex?: number;
+    scale?: number;
+    caption?: string;
+    sortOrder?: number;
+  }>;
+}) {
+  const { userId } = auth();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  const { exhibitionId, positions } = params;
+
+  try {
+    // First verify the user has access to this exhibition
+    const exhibition = await db.query.exhibitions.findFirst({
+      where: eq(exhibitions.id, exhibitionId),
+    });
+
+    if (!exhibition || exhibition.userId !== userId) {
+      // Check if user is a collaborator with appropriate permissions
+      const isCollaborator = await db.query.galleryCollaborators.findFirst({
+        where: and(
+          eq(galleryCollaborators.userId, userId),
+          eq(galleryCollaborators.galleryId, exhibition?.galleryId ?? 0),
+          or(
+            eq(galleryCollaborators.role, 'editor'),
+            eq(galleryCollaborators.role, 'admin')
+          )
+        ),
+      });
+
+      if (!isCollaborator) {
+        throw new Error("Unauthorized");
+      }
+    }
+
+    // For each position, upsert (update or insert)
+    const results = await Promise.all(
+      positions.map(async (position) => {
+        // Check if this image position already exists
+        const existing = await db.query.exhibitionImagePositions.findFirst({
+          where: and(
+            eq(exhibitionImagePositions.exhibitionId, exhibitionId),
+            eq(exhibitionImagePositions.imageId, position.imageId)
+          ),
+        });
+
+        if (existing) {
+          // Update the existing record
+          return db
+            .update(exhibitionImagePositions)
+            .set({
+              posX: position.posX,
+              posY: position.posY,
+              posZ: position.posZ ?? existing.posZ,
+              width: position.width ?? existing.width,
+              height: position.height ?? existing.height,
+              rotation: position.rotation ?? existing.rotation,
+              zIndex: position.zIndex ?? existing.zIndex,
+              scale: position.scale ?? existing.scale,
+              caption: position.caption ?? existing.caption,
+              sortOrder: position.sortOrder ?? existing.sortOrder,
+              updatedAt: new Date(),
+            })
+            .where(eq(exhibitionImagePositions.id, existing.id))
+            .returning();
+        } else {
+          // Create a new record
+          return db
+            .insert(exhibitionImagePositions)
+            .values({
+              exhibitionId,
+              imageId: position.imageId,
+              posX: position.posX,
+              posY: position.posY,
+              posZ: position.posZ ?? 0,
+              width: position.width ?? 100,
+              height: position.height ?? 100,
+              rotation: position.rotation ?? 0,
+              zIndex: position.zIndex ?? 0,
+              scale: position.scale ?? 100,
+              caption: position.caption,
+              sortOrder: position.sortOrder ?? 0,
+            })
+            .returning();
+        }
+      })
+    );
+
+    return results.flat();
+  } catch (error) {
+    console.error("Failed to save image positions:", error);
+    throw new Error("Failed to save image positions");
+  }
+}
+
+export async function incrementExhibitionViews(id: number) {
+  try {
+    await db
+      .update(exhibitions)
+      .set({
+        viewCount: sql`${exhibitions.viewCount} + 1`,
+      })
+      .where(eq(exhibitions.id, id));
+    
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to increment views:", error);
+    return { success: false };
+  }
 }
