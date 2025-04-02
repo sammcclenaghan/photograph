@@ -3,6 +3,83 @@ import { db } from "./db";
 import { eq, or, and } from "drizzle-orm";
 import { galleryCollaborators } from "./db/schema";
 
+// Exhibition queries
+export async function getExhibitionsByGallery(galleryId: number) {
+  const { userId } = auth();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  // Check if user has access to this gallery
+  const hasAccess = await checkGalleryAccess(galleryId, userId);
+  if (!hasAccess) {
+    throw new Error("Unauthorized");
+  }
+
+  const exhibitionsList = await db.query.exhibitions.findMany({
+    where: eq(exhibitions.galleryId, galleryId),
+    orderBy: [desc(exhibitions.updatedAt)],
+    with: {
+      gallery: true,
+    }
+  });
+
+  return exhibitionsList;
+}
+
+export async function getExhibitionById(id: number, includePositions = false) {
+  const { userId } = auth();
+  if (!userId) {
+    throw new Error("Unauthorized");
+  }
+
+  const exhibition = await db.query.exhibitions.findFirst({
+    where: eq(exhibitions.id, id),
+    with: {
+      gallery: true,
+      ...(includePositions && { imagePositions: { with: { image: true } } }),
+    }
+  });
+
+  if (!exhibition) {
+    throw new Error("Exhibition not found");
+  }
+
+  // Check if the user has access to the gallery this exhibition belongs to
+  const hasAccess = await checkGalleryAccess(exhibition.galleryId, userId);
+  // Allow public access if the exhibition is published
+  if (!hasAccess && exhibition.isPublished !== 1) {
+    throw new Error("Unauthorized");
+  }
+
+  return exhibition;
+}
+
+export async function getPublicExhibition(id: number) {
+  const exhibition = await db.query.exhibitions.findFirst({
+    where: and(
+      eq(exhibitions.id, id),
+      eq(exhibitions.isPublished, 1)
+    ),
+    with: {
+      gallery: true,
+      imagePositions: {
+        with: {
+          image: true
+        },
+        orderBy: asc(exhibitionImagePositions.sortOrder)
+      }
+    }
+  });
+
+  if (!exhibition) {
+    throw new Error("Exhibition not found or not published");
+  }
+
+  return exhibition;
+}
+
+// Gallery queries
 export async function getImages(galleryId: number) {
   const user = await auth();
 

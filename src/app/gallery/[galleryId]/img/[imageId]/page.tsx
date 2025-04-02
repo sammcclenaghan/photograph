@@ -9,10 +9,20 @@ type Props = {
 export default async function PhotoModal(props: Props) {
   const { params } = props;
   const { imageId } = params;
+  const imageIdNum = Number(imageId);
+  
+  // Handle invalid image ID format
+  if (isNaN(imageIdNum) || imageIdNum <= 0) {
+    return (
+      <div>
+        <PhotoPage id={-1} /> {/* Pass an invalid ID to trigger the not found handler */}
+      </div>
+    );
+  }
 
   return (
     <div>
-      <PhotoPage id={Number(imageId)} />
+      <PhotoPage id={imageIdNum} />
     </div>
   );
 }
