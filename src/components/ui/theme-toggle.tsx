@@ -8,7 +8,8 @@ import { useEffect, useState } from "react"
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
-  const [isChanging, setIsChanging] = useState(false)
+  const [isAnimating, setIsAnimating] = useState(false)
+  const [targetTheme, setTargetTheme] = useState<string | null>(null)
 
   // Avoid hydration mismatch by only rendering after mount
   useEffect(() => {
@@ -16,11 +17,22 @@ export function ThemeToggle() {
   }, [])
 
   const toggleTheme = () => {
-    setIsChanging(true)
+    if (isAnimating) return
+    
+    const newTheme = theme === "dark" ? "light" : "dark"
+    setTargetTheme(newTheme)
+    setIsAnimating(true)
+    
+    // Apply theme change after animation is halfway done
     setTimeout(() => {
-      setTheme(theme === "dark" ? "light" : "dark")
-      setTimeout(() => setIsChanging(false), 300)
-    }, 100)
+      setTheme(newTheme)
+    }, 350)
+    
+    // Reset animation state after animation completes
+    setTimeout(() => {
+      setIsAnimating(false)
+      setTargetTheme(null)
+    }, 700)
   }
 
   if (!mounted) {
@@ -28,42 +40,43 @@ export function ThemeToggle() {
   }
   
   const isDark = theme === "dark"
-  
+  const isGoingDark = targetTheme === "dark"
+  const isGoingLight = targetTheme === "light"
+
   return (
     <Button
       variant="ghost"
       size="icon"
       onClick={toggleTheme}
       aria-label="Toggle theme"
-      className="relative overflow-hidden"
-      disabled={isChanging}
+      className="relative overflow-hidden w-10 h-10"
+      disabled={isAnimating}
     >
-      <div className="relative w-[1.2rem] h-[1.2rem]">
-        {/* Sun - show in light mode */}
+      {/* Horizon line */}
+      <div className="absolute left-0 right-0 top-1/2 h-[1px] bg-foreground/10 z-10" />
+      
+      <div className="relative w-full h-full">
+        {/* Sun */}
         <Sun 
-          className={`absolute top-0 left-0 h-full w-full transition-all duration-200 ease-in-out
-            ${isDark 
-              ? "opacity-0 translate-x-full" 
-              : isChanging 
-                ? "opacity-0 -translate-x-full" 
-                : "opacity-100 translate-x-0"
-            }`}
+          className={`absolute left-1/2 -translate-x-1/2 w-5 h-5 transition-all duration-700 ease-in-out ${
+            !isDark && !isGoingDark
+              ? "top-0 opacity-100" // Visible in light mode
+              : isDark && isGoingLight
+                ? "translate-y-[-100%] opacity-100" // Rising when going to light
+                : "translate-y-[100%] opacity-0" // Set/hidden otherwise
+          }`}
         />
         
-        {/* Moon - show in dark mode */}
+        {/* Moon */}
         <Moon 
-          className={`absolute top-0 left-0 h-full w-full transition-all duration-200 ease-in-out
-            ${!isDark 
-              ? "opacity-0 -translate-x-full" 
-              : isChanging 
-                ? "opacity-0 translate-x-full" 
-                : "opacity-100 translate-x-0"
-            }`}
+          className={`absolute left-1/2 -translate-x-1/2 w-5 h-5 transition-all duration-700 ease-in-out ${
+            isDark && !isGoingLight
+              ? "top-0 opacity-100" // Visible in dark mode
+              : !isDark && isGoingDark
+                ? "translate-y-[-100%] opacity-100" // Rising when going to dark
+                : "translate-y-[100%] opacity-0" // Set/hidden otherwise
+          }`}
         />
-        
-        {/* Horizon line (optional) */}
-        <div className={`absolute top-1/2 left-0 w-full h-[1px] bg-foreground/20 transition-opacity duration-100 
-          ${isChanging ? "opacity-100" : "opacity-0"}`} />
       </div>
     </Button>
   )
