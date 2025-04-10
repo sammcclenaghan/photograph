@@ -30,7 +30,7 @@ const staggerVariants = {
     scale: 1,
     transition: {
       delay: i * 0.1,
-      duration: 0.3,
+      duration: 0.1,
     },
   }),
 };
@@ -39,17 +39,19 @@ const ImageItem = ({ image, onDelete, onClick, index }: { image: ImageType; onDe
   const [isPresent, safeToRemove] = usePresence();
 
   useEffect(() => {
-    !isPresent && setTimeout(safeToRemove, 1000);
+    // Reduce timeout to make elements disappear faster
+    !isPresent && setTimeout(safeToRemove, 250);
   }, [isPresent, safeToRemove]);
 
   return (
     <motion.div
       layout
+      layoutId={`image-${image.id}`}
       custom={index}
       variants={staggerVariants}
       initial="hidden"
       animate="visible"
-      exit={{ opacity: 0, scale: 0.8, transition: { duration: 0.2 } }}
+      exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.1 } }}
       className="break-inside-avoid mb-4"
     >
       <motion.div
