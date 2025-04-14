@@ -359,6 +359,9 @@ export async function removeCollaborator(
   return { success: true };
 }
 
+// This function is currently not used, so we're commenting it out
+// It relies on exhibitions and exhibitionImagePositions which don't exist in the schema
+/*
 export async function saveImagePositions(params: {
   exhibitionId: number;
   positions: Array<{
@@ -465,7 +468,11 @@ export async function saveImagePositions(params: {
     throw new Error("Failed to save image positions");
   }
 }
+*/
 
+// This function is currently not used, so we're commenting it out
+// It relies on exhibitions table which doesn't exist in the schema
+/*
 export async function incrementExhibitionViews(id: number) {
   try {
     await db
@@ -481,3 +488,4 @@ export async function incrementExhibitionViews(id: number) {
     return { success: false };
   }
 }
+*/

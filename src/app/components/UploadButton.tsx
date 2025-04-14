@@ -7,8 +7,7 @@ import { Upload, X } from 'lucide-react'
 import { cn } from "~/lib/utils"
 import { Progress } from "~/components/ui/progress"
 import { mutate } from 'swr';
-
-type Input = Parameters<typeof useUploadThing>
+import { useToast } from "~/hooks/use-toast";
 
 export function UploadButton({
   galleryId,
@@ -17,10 +16,10 @@ export function UploadButton({
   galleryId: number
   type: "galleryImageUploader" | "galleryCoverUploader",
 }) {
-  const router = useRouter()
   const [isUploading, setIsUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { toast } = useToast()
   const { startUpload } = useUploadThing(type, {
     onClientUploadComplete: async () => {
       console.log("Upload completed, refreshing page...")
@@ -28,17 +27,27 @@ export function UploadButton({
       setUploadProgress(0)
       await mutate(`/api/images?galleryId=${galleryId}`);
     },
-    onUploadProgress: (progress) => {
+    onUploadProgress: (progress: number) => {
       setUploadProgress(progress)
     },
-    onUploadError: () => {
+    onUploadError: (error: unknown) => {
+      console.error("Upload error:", error)
       setIsUploading(false)
       setUploadProgress(0)
+      
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
     },
   })
 
   const handleUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return
+    // Reset file input if no files are selected
+    if (!e.target.files || e.target.files.length === 0) {
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      return
+    }
 
     setIsUploading(true)
     const files = Array.from(e.target.files)

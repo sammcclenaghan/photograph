@@ -16,7 +16,9 @@ interface Props {
 }
 
 export default async function GalleryPage({ params }: Props) {
-  const { galleryId } = params;
+  // Await the params object before destructuring
+  const resolvedParams = await Promise.resolve(params);
+  const { galleryId } = resolvedParams;
   const galleryIdNum = Number(galleryId);
   
   // Handle invalid gallery ID format
