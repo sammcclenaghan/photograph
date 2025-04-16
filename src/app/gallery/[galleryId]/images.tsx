@@ -6,22 +6,15 @@ import Image from 'next/image';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { deleteImage } from '~/server/actions';
 import { 
-  Loader2, X, 
-  Trash2, DownloadIcon, Share2, ZoomOut
+  Loader2, ChevronLeft, ChevronRight, X, 
+  Trash2, ZoomIn, ZoomOut, DownloadIcon, Share2
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle } from '~/components/ui/dialog';
 import { Button } from '~/components/ui/button';
 import { useToast } from "~/hooks/use-toast";
 import { useLastViewedPhoto } from "~/hooks/use-last-viewed-photo";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, usePresence } from "motion/react";
 import { useSwipeable } from "react-swipeable";
-import { 
-  Carousel, 
-  CarouselContent, 
-  CarouselItem, 
-  CarouselPrevious, 
-  CarouselNext 
-} from "~/components/ui/carousel";
 
 interface ImageProps {
   galleryId: number;
@@ -69,11 +62,16 @@ const ImageItem = ({
   priority?: boolean;
   isLastViewed?: boolean;
 }) => {
+  const [isPresent, safeToRemove] = usePresence();
   const [isLoaded, setIsLoaded] = useState(false);
   const imageRef = useRef<HTMLDivElement>(null);
   
   // Generate a consistent aspect ratio based on image ID
   const aspectRatio = 0.8 + ((image.id % 7) / 10);
+
+  useEffect(() => {
+    !isPresent && setTimeout(safeToRemove, 250);
+  }, [isPresent, safeToRemove]);
 
   // Scroll into view if this is the last viewed image
   useEffect(() => {
@@ -152,55 +150,48 @@ const ImageItem = ({
   );
 };
 
-// Animation variants for image transitions
-const imageVariants = {
-  enter: (direction: number) => ({
-    opacity: 0,
-    x: direction > 0 ? 300 : -300,
-    scale: direction === 0 ? 0.9 : 1
-  }),
-  center: { 
-    opacity: 1, 
-    x: 0, 
-    scale: 1,
-    zIndex: 1
-  },
-  exit: (direction: number) => ({
-    opacity: 0,
-    x: direction > 0 ? -300 : 300,
-    scale: direction === 0 ? 0.9 : 1,
-    zIndex: 0
-  }),
-};
-
 const CarouselImage = ({ 
   image, 
   direction, 
   isZoomed, 
-  toggleZoom
+  toggleZoom,
+  onLoadingComplete
 }: { 
   image: ImageType; 
   direction: number; 
   isZoomed: boolean; 
   toggleZoom: () => void;
+  onLoadingComplete?: () => void;
 }) => {
   return (
     <motion.div
       key={image.id}
       custom={direction}
-      initial="enter"
-      animate="center"
-      exit="exit"
-      variants={imageVariants}
-      transition={{ 
-        x: { type: "spring", stiffness: 300, damping: 30 },
-        opacity: { duration: 0.2 },
+      initial={{ 
+        opacity: 0, 
+        x: direction === 0 ? 0 : (direction > 0 ? 300 : -300),
+        scale: direction === 0 ? 0.9 : 1 
       }}
-      className="absolute inset-0 w-full h-full flex items-center justify-center"
+      animate={{ 
+        opacity: 1, 
+        x: 0,
+        scale: 1
+      }}
+      exit={{ 
+        opacity: 0, 
+        x: direction === 0 ? 0 : (direction > 0 ? -300 : 300),
+        scale: direction === 0 ? 0.9 : 1 
+      }}
+      transition={{ 
+        type: "spring", 
+        stiffness: 300, 
+        damping: 30
+      }}
+      className="absolute inset-0 w-full h-full"
       style={{ transform: 'translate3d(0, 0, 0)' }} // Force GPU acceleration
     >
       <motion.div
-        className="w-full h-full flex items-center justify-center"
+        className="w-full h-full"
         animate={{ scale: isZoomed ? 1.1 : 1 }}
         transition={{ 
           type: "spring", 
@@ -217,6 +208,7 @@ const CarouselImage = ({
           priority
           sizes="95vw"
           onClick={toggleZoom}
+          onLoadingComplete={onLoadingComplete}
           placeholder="blur"
           blurDataURL={generateBlurPlaceholder()}
           className="transition-opacity duration-300"
@@ -237,16 +229,12 @@ export default function Images({ galleryId }: ImageProps) {
   const [selectedImage, setSelectedImage] = useState<ImageType | null>(null);
   const [direction, setDirection] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
   const { toast } = useToast();
 
-  const { data: images, error, isLoading } = useSWR<ImageType[], Error>(
+  const { data: images, error, isLoading } = useSWR<ImageType[]>(
     `/api/images?galleryId=${galleryId}`,
-    fetcher,
-    {
-      revalidateOnFocus: false,
-      dedupingInterval: 60000, // 1 minute
-      errorRetryCount: 3
-    }
+    fetcher
   );
 
   // Handle URL params for direct navigation to a specific image
@@ -269,6 +257,7 @@ export default function Images({ galleryId }: ImageProps) {
 
   const openModal = useCallback(
     (image: ImageType) => {
+      setIsLoaded(false);
       setSelectedImage(image);
       setLastViewedPhoto(image.id);
       
@@ -295,6 +284,7 @@ export default function Images({ galleryId }: ImageProps) {
     (newDirection: 'prev' | 'next') => {
       if (!selectedImage || !images || images.length <= 1) return;
       
+      setIsLoaded(false);
       const currentIndex = images.findIndex((img) => img.id === selectedImage.id);
       let newIndex;
       
@@ -307,8 +297,6 @@ export default function Images({ galleryId }: ImageProps) {
       }
       
       const newImage = images[newIndex];
-      if (!newImage) return; // Guard against undefined
-      
       setSelectedImage(newImage);
       setLastViewedPhoto(newImage.id);
       setIsZoomed(false);
@@ -370,7 +358,7 @@ export default function Images({ galleryId }: ImageProps) {
     });
   }, [selectedImage, toast]);
 
-  const handleShare = useCallback(async () => {
+  const handleShare = useCallback(() => {
     if (!selectedImage) return;
     
     // Create a shareable link to the individual photo page
@@ -378,23 +366,21 @@ export default function Images({ galleryId }: ImageProps) {
     
     // Try to use the Web Share API if available
     if (navigator.share) {
-      try {
-        await navigator.share({
-          title: selectedImage.name || 'Shared photo',
-          text: 'Check out this photo',
-          url: shareUrl,
-        });
-      } catch {
+      navigator.share({
+        title: selectedImage.name || 'Shared photo',
+        text: 'Check out this photo',
+        url: shareUrl,
+      }).catch(() => {
         // Fallback to clipboard
-        await navigator.clipboard.writeText(shareUrl);
+        navigator.clipboard.writeText(shareUrl);
         toast({
           title: "Link copied",
           description: "Photo link copied to clipboard!",
         });
-      }
+      });
     } else {
       // Fallback for browsers without Web Share API
-      await navigator.clipboard.writeText(shareUrl);
+      navigator.clipboard.writeText(shareUrl);
       toast({
         title: "Link copied",
         description: "Photo link copied to clipboard!",
@@ -419,8 +405,6 @@ export default function Images({ galleryId }: ImageProps) {
             const nextIndex = currentIndex < images.length - 1 ? currentIndex + 1 : currentIndex - 1;
             setDirection(0);
             const newImage = images[nextIndex];
-            if (!newImage) return; // Guard against undefined
-            
             setSelectedImage(newImage);
             setLastViewedPhoto(newImage.id);
             
@@ -447,10 +431,7 @@ export default function Images({ galleryId }: ImageProps) {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto mb-2" />
-          <p className="text-sm text-muted-foreground">Loading gallery images...</p>
-        </div>
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -458,15 +439,7 @@ export default function Images({ galleryId }: ImageProps) {
   if (error) {
     return (
       <div className="text-center text-destructive p-4">
-        <p>Failed to load images. Please try again later.</p>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="mt-2"
-          onClick={() => window.location.reload()}
-        >
-          Retry
-        </Button>
+        Failed to load images. Please try again later.
       </div>
     );
   }
@@ -481,7 +454,7 @@ export default function Images({ galleryId }: ImageProps) {
     <>
       {/* Main image grid */}
       <motion.div
-        className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 xl:columns-6 gap-3"
+        className="columns-2 sm:columns-3 md:columns-4 lg:columns-6 xl:columns-7 2xl:columns-8 gap-2"
         initial="hidden"
         animate="visible"
         variants={{
@@ -511,224 +484,217 @@ export default function Images({ galleryId }: ImageProps) {
       <AnimatePresence>
         {selectedImage && (
           <Dialog open={true} onOpenChange={closeModal}>
-            <DialogContent className="max-w-[95vw] w-full h-[90vh] p-0 rounded-xl border-none overflow-hidden bg-black/95 backdrop-blur-lg shadow-2xl ring-1 ring-white/10">
+            <DialogContent className="fixed inset-0 z-50 w-full h-full p-0 border-none bg-transparent max-w-none overflow-hidden">
               <DialogTitle className="sr-only">Image Viewer</DialogTitle>
               
-              <div className="relative w-full h-full flex flex-col overflow-hidden">
-
+              {/* Backdrop overlay */}
+              <motion.div 
+                className="fixed inset-0 z-30 bg-black/70 backdrop-blur-2xl"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              />
                 
-                {/* Main image viewer */}
-                <div className="relative flex-1 w-full pb-16"> {/* Added bottom padding to make room for thumbnails */}
-                  {images && images.length > 0 ? (
-                    <Carousel
-                      opts={{
-                        align: "center",
-                        containScroll: false,
-                        loop: true,
-                        startIndex: currentIndex !== -1 ? currentIndex : 0
-                      }}
-                      className="w-full h-full relative"
-                      onMouseDown={(e) => e.stopPropagation()}
-                    >
-                      <CarouselContent className="h-full" {...swipeHandlers}>
-                        {images.map((img) => (
-                          <CarouselItem key={img.id} className="h-full">
-                            <div className="relative h-[85vh] w-full">
-                              <motion.div
-                                className="relative w-full h-full"
-                                animate={{ scale: isZoomed && selectedImage.id === img.id ? 1.1 : 1 }}
-                                transition={{ 
-                                  type: "spring", 
-                                  stiffness: 400, 
-                                  damping: 25 
+              {/* Main modal content */}
+              <div className="relative z-50 flex items-center justify-center w-full h-full" {...swipeHandlers}>
+                {/* Main image container */}
+                <div className="w-full max-w-7xl max-h-[90vh] overflow-hidden flex items-center justify-center px-4">
+                  <div className="relative flex items-center justify-center">
+                    <AnimatePresence mode="wait" initial={false} custom={direction}>
+                      <motion.div
+                        key={selectedImage.id}
+                        custom={direction}
+                        initial={{ 
+                          opacity: 0, 
+                          x: direction === 0 ? 0 : (direction > 0 ? 300 : -300),
+                        }}
+                        animate={{ 
+                          opacity: 1, 
+                          x: 0,
+                        }}
+                        exit={{ 
+                          opacity: 0, 
+                          x: direction === 0 ? 0 : (direction > 0 ? -300 : 300),
+                        }}
+                        transition={{ 
+                          type: "spring", 
+                          stiffness: 300, 
+                          damping: 30
+                        }}
+                        className="relative"
+                      >
+                        <Image
+                          src={selectedImage.url}
+                          alt={selectedImage.name || "Gallery image"}
+                          width={1920}
+                          height={1280}
+                          className={`${isZoomed ? 'scale-110' : 'scale-100'} transition-transform duration-300 max-h-[80vh] w-auto`}
+                          style={{ objectFit: 'contain' }}
+                          quality={100}
+                          priority
+                          onLoadingComplete={() => setIsLoaded(true)}
+                        />
+                      </motion.div>
+                    </AnimatePresence>
+                    
+                    {!isLoaded && (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <Loader2 className="h-12 w-12 animate-spin text-white/70" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Overlaid UI elements */}
+                <div className="absolute inset-0 mx-auto flex max-w-7xl items-center justify-center">
+                  {isLoaded && (
+                    <div className="relative aspect-[3/2] max-h-full w-full">
+                      {/* Navigation buttons */}
+                      {images.length > 1 && currentIndex > 0 && (
+                        <button
+                          className="absolute left-3 top-[calc(50%-16px)] rounded-full bg-black/50 p-3 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white focus:outline-none"
+                          style={{ transform: "translate3d(0, 0, 0)" }}
+                          onClick={() => navigateImage('prev')}
+                          aria-label="Previous image"
+                        >
+                          <ChevronLeft className="h-6 w-6" />
+                        </button>
+                      )}
+                      
+                      {images.length > 1 && currentIndex < images.length - 1 && (
+                        <button
+                          className="absolute right-3 top-[calc(50%-16px)] rounded-full bg-black/50 p-3 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white focus:outline-none"
+                          style={{ transform: "translate3d(0, 0, 0)" }}
+                          onClick={() => navigateImage('next')}
+                          aria-label="Next image"
+                        >
+                          <ChevronRight className="h-6 w-6" />
+                        </button>
+                      )}
+                      
+                      {/* Top-right buttons */}
+                      <div className="absolute top-0 right-0 flex items-center gap-2 p-3 text-white">
+                        <button
+                          onClick={handleShare}
+                          className="rounded-full bg-black/50 p-2 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white"
+                          title="Share image"
+                        >
+                          <Share2 className="h-5 w-5" />
+                        </button>
+                        
+                        <button
+                          onClick={handleDownload}
+                          className="rounded-full bg-black/50 p-2 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white"
+                          title="Download image"
+                        >
+                          <DownloadIcon className="h-5 w-5" />
+                        </button>
+                      </div>
+                      
+                      {/* Top-left buttons */}
+                      <div className="absolute top-0 left-0 flex items-center gap-2 p-3 text-white">
+                        <button
+                          onClick={closeModal}
+                          className="rounded-full bg-black/50 p-2 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white"
+                        >
+                          <X className="h-5 w-5" />
+                        </button>
+                        
+                        <button
+                          onClick={toggleZoom}
+                          className="rounded-full bg-black/50 p-2 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white"
+                        >
+                          {isZoomed ? (
+                            <ZoomOut className="h-5 w-5" />
+                          ) : (
+                            <ZoomIn className="h-5 w-5" />
+                          )}
+                        </button>
+                      </div>
+                      
+                      {/* Delete button */}
+                      <div className="absolute bottom-20 right-3 p-3">
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          className="rounded-full shadow-lg"
+                          onClick={() => selectedImage && handleDeleteImage(selectedImage.id)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Bottom thumbnail carousel */}
+                  {images.length > 1 && (
+                    <div className="fixed inset-x-0 bottom-0 z-40 overflow-hidden bg-gradient-to-b from-black/0 to-black/60">
+                      <motion.div
+                        initial={false}
+                        className="mx-auto my-6 flex aspect-[3/2] h-14"
+                      >
+                        <AnimatePresence initial={false}>
+                          {images.filter((_, idx) => 
+                            // Filter images to show only ones near the current index
+                            Math.abs(idx - currentIndex) <= 15
+                          ).map((image, filteredIdx) => {
+                            // Calculate real index in the full array
+                            const idx = images.findIndex(img => img.id === image.id);
+                            
+                            return (
+                              <motion.button
+                                initial={{
+                                  width: "0%",
+                                  x: `${Math.max((currentIndex - 1) * -100, 15 * -100)}%`,
                                 }}
+                                animate={{
+                                  scale: idx === currentIndex ? 1.25 : 1,
+                                  width: "100%",
+                                  x: `${Math.max(currentIndex * -100, 15 * -100)}%`,
+                                }}
+                                exit={{ width: "0%" }}
+                                onClick={() => {
+                                  setDirection(idx > currentIndex ? 1 : -1);
+                                  setSelectedImage(image);
+                                  setLastViewedPhoto(image.id);
+                                  setIsLoaded(false);
+                                  
+                                  // Update URL with new photoId
+                                  const params = new URLSearchParams(searchParams.toString());
+                                  params.set('photoId', image.id.toString());
+                                  router.push(`${pathname}?${params.toString()}`, { scroll: false });
+                                }}
+                                key={image.id}
+                                className={`
+                                  ${idx === currentIndex
+                                    ? "z-20 rounded-md shadow shadow-black/50"
+                                    : "z-10"
+                                  } 
+                                  ${idx === 0 ? "rounded-l-md" : ""} 
+                                  ${idx === images.length - 1 ? "rounded-r-md" : ""} 
+                                  relative inline-block w-full shrink-0 transform-gpu overflow-hidden focus:outline-none
+                                `}
                               >
                                 <Image
-                                  src={img.url}
-                                  alt={img.name || "Gallery image"}
-                                  fill
-                                  sizes="95vw"
-                                  priority={img.id === selectedImage?.id}
-                                  quality={90}
-                                  className="transition-opacity duration-300"
-                                  style={{ 
-                                    objectFit: !isZoomed ? 'contain' : 'cover',
-                                    height: '100%',
-                                    width: '100%',
-                                    opacity: img.id === selectedImage?.id ? 1 : 0.4
-                                  }}
-                                  onClick={selectedImage?.id === img.id ? toggleZoom : undefined}
-                                  placeholder="blur"
-                                  blurDataURL={generateBlurPlaceholder()}
+                                  alt=""
+                                  width={180}
+                                  height={120}
+                                  className={`
+                                    ${idx === currentIndex
+                                      ? "brightness-110 hover:brightness-110"
+                                      : "brightness-50 contrast-125 hover:brightness-75"
+                                    } h-full transform object-cover transition
+                                  `}
+                                  src={image.url}
                                 />
-                              </motion.div>
-                            </div>
-                          </CarouselItem>
-                        ))}
-                      </CarouselContent>
-                      
-                      {images.length > 1 && (
-                        <>
-                          <CarouselPrevious 
-                            onClick={() => navigateImage('prev')}
-                            className="h-12 w-12 left-4 border-none bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-all"
-                          />
-                          <CarouselNext 
-                            onClick={() => navigateImage('next')}
-                            className="h-12 w-12 right-4 border-none bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-all"
-                          />
-                        </>
-                      )}
-                    </Carousel>
-                  ) : (
-                    <AnimatePresence mode="wait" initial={false} custom={direction}>
-                      {selectedImage && (
-                        <CarouselImage
-                          key={`modal-image-${selectedImage.id}`}
-                          image={selectedImage}
-                          direction={direction}
-                          isZoomed={isZoomed}
-                          toggleZoom={toggleZoom}
-                        />
-                      )}
-                    </AnimatePresence>
-                  )}
-
-                </div>
-                
-                {/* Image counter and action buttons */}
-                <div className="absolute top-4 left-0 right-0 px-4 flex justify-between items-center">
-                  <div className="px-3 py-1.5 bg-black/60 backdrop-blur-sm rounded-full text-sm font-medium text-white/90">
-                    {currentIndex !== -1 && `${currentIndex + 1} / ${images.length}`}
-                  </div>
-                  
-                  <div className="flex space-x-3">
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-9 w-9 rounded-full bg-black/60 backdrop-blur-sm border-none hover:bg-white/20 transition-all"
-                      onClick={handleDownload}
-                      aria-label="Download image"
-                    >
-                      <DownloadIcon className="h-4 w-4 text-white/90" />
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-9 w-9 rounded-full bg-black/60 backdrop-blur-sm border-none hover:bg-white/20 transition-all"
-                      onClick={handleShare}
-                      aria-label="Share image"
-                    >
-                      <Share2 className="h-4 w-4 text-white/90" />
-                    </Button>
-                    
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-9 w-9 rounded-full bg-black/60 backdrop-blur-sm border-none hover:bg-white/20 transition-all"
-                      onClick={closeModal}
-                      aria-label="Close"
-                    >
-                      <X className="h-4 w-4 text-white/90" />
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Thumbnail carousel */}
-                {images && images.length > 1 && (
-                  <div className="w-full py-3 px-4 bg-black/60 backdrop-blur-md border-t border-white/10 absolute bottom-0 left-0 right-0">
-                    <Carousel
-                      opts={{
-                        align: "center",
-                        containScroll: "trimSnaps",
-                        dragFree: true
-                      }}
-                      className="w-full"
-                    >
-                      <CarouselContent className="py-1">
-                        {images.map((image, idx) => (
-                          <CarouselItem key={image.id} className="basis-14 md:basis-16 lg:basis-20 pl-2 first:pl-4">
-                            <button
-                              onClick={() => {
-                                setDirection(idx > currentIndex ? 1 : -1);
-                                const newImage = images[idx];
-                                if (!newImage) return; // Guard against undefined
-                                
-                                setSelectedImage(newImage);
-                                setLastViewedPhoto(newImage.id);
-                                
-                                // Update URL with new photoId
-                                const params = new URLSearchParams(searchParams.toString());
-                                params.set('photoId', newImage.id.toString());
-                                router.push(`${pathname}?${params.toString()}`, { scroll: false });
-                              }}
-                              className={`relative aspect-square w-full overflow-hidden rounded-md border-2 transition-all duration-200 ${
-                                selectedImage?.id === image.id
-                                  ? 'border-primary ring-2 ring-primary ring-offset-1 ring-offset-black'
-                                  : 'border-transparent opacity-60 hover:opacity-100'
-                              }`}
-                              aria-label={`View image ${idx + 1}`}
-                            >
-                              <Image
-                                src={image.url}
-                                alt=""
-                                fill
-                                className="object-cover transition-all duration-200"
-                                sizes="(max-width: 768px) 64px, 96px"
-                                quality={30}
-                              />
-                            </button>
-                          </CarouselItem>
-                        ))}
-                      </CarouselContent>
-                    </Carousel>
-                  </div>
-                )}
-                
-                {/* Delete button */}
-                <motion.div 
-                  className="absolute bottom-20 right-4"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="rounded-full shadow-lg"
-                    onClick={() => selectedImage && handleDeleteImage(selectedImage.id)}
-                    aria-label="Delete image"
-                  >
-                    <Trash2 className="h-4 w-4 mr-2" />
-                    Delete
-                  </Button>
-                </motion.div>
-                
-                {/* Image name/caption - if available */}
-                {selectedImage?.name && (
-                  <div className="absolute bottom-4 left-4 max-w-[80%] px-3 py-1.5 bg-black/50 backdrop-blur-sm rounded-md text-sm text-white truncate">
-                    {selectedImage.name}
-                  </div>
-                )}
-                
-                {/* Zoom indicator */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ 
-                    opacity: isZoomed ? 1 : 0,
-                    transition: { delay: isZoomed ? 0.2 : 0 }
-                  }}
-                  className="absolute top-20 right-4 px-3 py-2 bg-black/50 backdrop-blur-sm rounded-md text-white"
-                >
-                  {isZoomed ? (
-                    <div className="flex items-center">
-                      <ZoomOut className="h-4 w-4 mr-2" />
-                      <span>Zoomed</span>
+                              </motion.button>
+                            );
+                          })}
+                        </AnimatePresence>
+                      </motion.div>
                     </div>
-                  ) : null}
-                </motion.div>
+                  )}
+                </div>
               </div>
             </DialogContent>
           </Dialog>
