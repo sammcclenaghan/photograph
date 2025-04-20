@@ -155,74 +155,6 @@ const ImageItem = ({
   );
 };
 
-const CarouselImage = ({
-  image,
-  direction,
-  isZoomed,
-  toggleZoom,
-  onLoadingComplete,
-}: {
-  image: ImageType;
-  direction: number;
-  isZoomed: boolean;
-  toggleZoom: () => void;
-  onLoadingComplete?: () => void;
-}) => {
-  return (
-    <motion.div
-      key={image.id}
-      custom={direction}
-      initial={{
-        opacity: 0,
-        x: direction === 0 ? 0 : direction > 0 ? 300 : -300,
-        scale: direction === 0 ? 0.9 : 1,
-      }}
-      animate={{
-        opacity: 1,
-        x: 0,
-        scale: 1,
-      }}
-      exit={{
-        opacity: 0,
-        x: direction === 0 ? 0 : direction > 0 ? -300 : 300,
-        scale: direction === 0 ? 0.9 : 1,
-      }}
-      transition={{
-        type: "spring",
-        stiffness: 300,
-        damping: 30,
-      }}
-      className="absolute inset-0 h-full w-full"
-      style={{ transform: "translate3d(0, 0, 0)" }} // Force GPU acceleration
-    >
-      <motion.div
-        className="h-full w-full"
-        animate={{ scale: isZoomed ? 1.1 : 1 }}
-        transition={{
-          type: "spring",
-          stiffness: 400,
-          damping: 25,
-        }}
-      >
-        <Image
-          src={image.url}
-          alt={image.name || "Gallery image"}
-          fill
-          style={{ objectFit: !isZoomed ? "contain" : "cover" }}
-          quality={90}
-          priority
-          sizes="95vw"
-          onClick={toggleZoom}
-          onLoadingComplete={onLoadingComplete}
-          placeholder="blur"
-          blurDataURL={generateBlurPlaceholder()}
-          className="transition-opacity duration-300"
-        />
-      </motion.div>
-    </motion.div>
-  );
-};
-
 export default function Images({ galleryId }: ImageProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -235,6 +167,9 @@ export default function Images({ galleryId }: ImageProps) {
   const [direction, setDirection] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [showSpinner, setShowSpinner] = useState(false);
+
+  const spinnerTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   const {
@@ -242,6 +177,74 @@ export default function Images({ galleryId }: ImageProps) {
     error,
     isLoading,
   } = useSWR<ImageType[]>(`/api/images?galleryId=${galleryId}`, fetcher);
+
+  const currentIndex =
+    selectedImage && images
+      ? images.findIndex((img) => img.id === selectedImage.id)
+      : -1;
+
+  useEffect(() => {
+    // Only preload if the modal is open and we have images
+    if (
+      !selectedImage ||
+      !images ||
+      images.length <= 1 ||
+      currentIndex === -1
+    ) {
+      return;
+    }
+
+    const preloadImage = (index: number) => {
+      if (index >= 0 && index < images.length && index !== currentIndex) {
+        const img = new window.Image();
+        img.src = images[index].url;
+      }
+    };
+    const nextIndex = (currentIndex + 1) % images.length;
+    preloadImage(nextIndex);
+    const prevIndex = (currentIndex - 1 + images.length) % images.length;
+    preloadImage(prevIndex);
+  }, [selectedImage, images, currentIndex]);
+
+  // --- Effect to handle spinner logic when selectedImage changes ---
+  useEffect(() => {
+    // Clear any previous timeout when the image changes or modal closes
+    if (spinnerTimeoutRef.current) {
+      clearTimeout(spinnerTimeoutRef.current);
+      spinnerTimeoutRef.current = null;
+    }
+
+    if (selectedImage) {
+      // 1. Reset loading state for the new image
+      setIsLoaded(false);
+      // 2. Optimistically hide spinner
+      setShowSpinner(false);
+
+      // 3. Set a timer. If onLoadingComplete doesn't fire fast enough, show the spinner.
+      spinnerTimeoutRef.current = setTimeout(() => {
+        // Only show spinner if the image ISN'T loaded yet when timer fires
+        if (!isLoaded) {
+          // console.log("Spinner timeout fired, showing spinner");
+          setShowSpinner(true);
+        }
+      }, 250); // Adjust delay (ms) as needed - 250ms is a starting point
+    } else {
+      // Modal closed, ensure spinner is off
+      setShowSpinner(false);
+      setIsLoaded(false);
+    }
+
+    // Cleanup function to clear timeout if component unmounts or selectedImage changes again
+    return () => {
+      if (spinnerTimeoutRef.current) {
+        clearTimeout(spinnerTimeoutRef.current);
+        spinnerTimeoutRef.current = null;
+      }
+    };
+    // IMPORTANT: Add isLoaded to dependencies here ONLY if you want the timeout
+    // to potentially *start* after a flicker of isLoaded becoming true then false.
+    // Usually, you only want this effect tied strictly to the *change* of selectedImage.
+  }, [selectedImage]); // Rerun only when the selected image changes
 
   // Handle URL params for direct navigation to a specific image
   useEffect(() => {
@@ -256,11 +259,18 @@ export default function Images({ galleryId }: ImageProps) {
     }
   }, [photoId, images]);
 
-  // Calculate current image index
-  const currentIndex =
-    selectedImage && images
-      ? images.findIndex((img) => img.id === selectedImage.id)
-      : -1;
+  const handleLoadingComplete = useCallback(() => {
+    // console.log("onLoadingComplete fired");
+    // 1. Mark as loaded
+    setIsLoaded(true);
+    // 2. Hide spinner immediately
+    setShowSpinner(false);
+    // 3. Clear the timeout (if it's still pending)
+    if (spinnerTimeoutRef.current) {
+      clearTimeout(spinnerTimeoutRef.current);
+      spinnerTimeoutRef.current = null;
+    }
+  }, []); // No dependencies needed if it only uses setters and refs
 
   const openModal = useCallback(
     (image: ImageType) => {
@@ -571,8 +581,15 @@ export default function Images({ galleryId }: ImageProps) {
                           style={{ objectFit: "contain" }}
                           quality={100}
                           priority
-                          onLoadingComplete={() => setIsLoaded(true)}
+                          onLoadingComplete={handleLoadingComplete}
+                          onClick={toggleZoom}
                         />
+
+                        {showSpinner && (
+                          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/10">
+                            <Loader2 className="h-12 w-12 animate-spin text-white/70" />
+                          </div>
+                        )}
                       </motion.div>
                     </AnimatePresence>
 
