@@ -4,9 +4,6 @@ import Images from './images';
 import { getGallery } from '~/server/queries';
 import { UploadButton } from '~/app/components/UploadButton';
 import EditGalleryButton from '~/app/components/EditGalleryButton';
-import ShareGalleryButton from '~/app/components/ShareGalleryButton';
-import ManageCollaboratorsButton from '~/app/components/ManageCollaboratorsButton';
-import GalleryCollaborationStatus from '~/app/components/GalleryCollaborationStatus';
 import GalleryNotFound from '~/app/components/GalleryNotFound';
 
 interface Props {
@@ -39,12 +36,9 @@ export default async function GalleryPage({ params }: Props) {
           <header className="flex flex-row items-center justify-between pb-4 border-b border-border">
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-bold text-foreground">{gallery.name}</h1>
-              <GalleryCollaborationStatus galleryId={galleryIdNum} ownerId={gallery.userId} />
             </div>
             <div className="flex items-center space-x-2">
               <EditGalleryButton gallery={gallery} />
-              <ShareGalleryButton galleryId={galleryIdNum} />
-              <ManageCollaboratorsButton galleryId={galleryIdNum} galleryOwnerId={gallery.userId} />
               <UploadButton galleryId={galleryIdNum} type="galleryImageUploader" />
             </div>
           </header>

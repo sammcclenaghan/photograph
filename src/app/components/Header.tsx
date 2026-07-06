@@ -3,7 +3,6 @@
 import { SignInButton, UserButton, useAuth } from '@clerk/nextjs'
 import Link from 'next/link';
 import { ThemeToggle } from '~/components/ui/theme-toggle';
-import PendingInvitationsNotification from './PendingInvitationsNotification';
 
 export default function Header() {
   const { isSignedIn } = useAuth();
@@ -18,10 +17,7 @@ export default function Header() {
         <ThemeToggle />
 
         {isSignedIn ? (
-          <>
-            <PendingInvitationsNotification />
-            <UserButton />
-          </>
+          <UserButton />
         ) : (
           <SignInButton />
         )}

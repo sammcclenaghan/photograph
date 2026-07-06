@@ -1,0 +1,1 @@
+DROP TABLE "photograph_gallery_collaborators" CASCADE;

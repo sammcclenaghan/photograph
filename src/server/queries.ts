@@ -1,7 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
 import { db } from "./db";
-import { eq, or, and } from "drizzle-orm";
-import { galleryCollaborators } from "./db/schema";
 
 // Gallery queries
 export async function getImages(galleryId: number) {
@@ -46,7 +44,7 @@ export async function getGallery(id: number) {
   });
   if (!gallery) throw new Error("Gallery not found");
 
-  // Check if user is owner or collaborator
+  // Check if user is the owner
   const hasAccess = await checkGalleryAccess(gallery.id, user.userId);
   if (!hasAccess) throw new Error("Unauthorized");
 
@@ -58,23 +56,10 @@ export async function getGalleries() {
   if (!user.userId) return null;
 
   // Get galleries owned by the user
-  const ownedGalleries = await db.query.galleries.findMany({
+  return db.query.galleries.findMany({
     where: (model, { eq }) => eq(model.userId, user.userId),
     orderBy: (model, { desc }) => desc(model.id),
   });
-  
-  // Get galleries shared with the user
-  const collaborativeGalleries = await db.query.galleryCollaborators.findMany({
-    where: (model, { eq }) => eq(model.userId, user.userId),
-    with: {
-      gallery: true
-    }
-  });
-
-  // Combine and deduplicate the galleries
-  const sharedGalleries = collaborativeGalleries.map(collab => collab.gallery);
-  
-  return [...ownedGalleries, ...sharedGalleries];
 }
 
 export async function getGalleryName(galleryId: number) {
@@ -100,80 +85,11 @@ export async function getGalleryWithImages(galleryId: number) {
   return gallery;
 }
 
-// Helper function to check if a user has access to a gallery
+// Helper function to check if a user has access to a gallery (owner-only)
 export async function checkGalleryAccess(galleryId: number, userId: string) {
   const gallery = await db.query.galleries.findFirst({
     where: (model, { eq }) => eq(model.id, galleryId),
   });
-  
-  if (!gallery) return false;
 
-  // If the user is the owner, they have access
-  if (gallery.userId === userId) return true;
-  
-  // Check if the user is a collaborator
-  const collaborator = await db.query.galleryCollaborators.findFirst({
-    where: (model, { and, eq }) => 
-      and(eq(model.galleryId, galleryId), eq(model.userId, userId))
-  });
-  
-  return !!collaborator;
-}
-
-// Get collaborator's role (null if not a collaborator)
-export async function getCollaboratorRole(galleryId: number, userId: string) {
-  const collaborator = await db.query.galleryCollaborators.findFirst({
-    where: (model, { and, eq }) => 
-      and(eq(model.galleryId, galleryId), eq(model.userId, userId))
-  });
-  
-  return collaborator?.role ?? null;
-}
-
-// Get a list of collaborators for a gallery
-export async function getGalleryCollaborators(galleryId: number) {
-  const user = await auth();
-  if (!user.userId) throw new Error("Unauthorized");
-
-  // Check if the requesting user has access to the gallery
-  const gallery = await db.query.galleries.findFirst({
-    where: (model, { eq }) => eq(model.id, galleryId)
-  });
-  
-  if (!gallery) throw new Error("Gallery not found");
-  
-  // Only the owner and admin-level collaborators should be able to see the full list of collaborators
-  const isOwner = gallery.userId === user.userId;
-  if (!isOwner) {
-    const role = await getCollaboratorRole(galleryId, user.userId);
-    if (role !== 'admin') throw new Error("Unauthorized");
-  }
-
-  // Fetch all collaborators
-  const collaborators = await db.query.galleryCollaborators.findMany({
-    where: (model, { eq }) => eq(model.galleryId, galleryId)
-  });
-
-  return collaborators;
-}
-
-// Check if the user has edit permissions for a gallery
-export async function hasEditPermission(galleryId: number, userId: string) {
-  const gallery = await db.query.galleries.findFirst({
-    where: (model, { eq }) => eq(model.id, galleryId)
-  });
-  
-  if (!gallery) return false;
-  
-  // Owner always has edit permission
-  if (gallery.userId === userId) return true;
-  
-  // Check collaborator role
-  const collaborator = await db.query.galleryCollaborators.findFirst({
-    where: (model, { and, eq }) => 
-      and(eq(model.galleryId, galleryId), eq(model.userId, userId))
-  });
-  
-  // Editors and admins can edit
-  return collaborator?.role === 'editor' || collaborator?.role === 'admin';
+  return gallery?.userId === userId;
 }
