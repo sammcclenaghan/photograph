@@ -50,7 +50,7 @@ function ImageNotFound() {
       <h1 className="mb-3 text-3xl font-bold">Image Not Found</h1>
       
       <p className="mb-8 text-muted-foreground">
-        The image you're looking for doesn't exist or may have been removed.
+        The image you&apos;re looking for doesn&apos;t exist or may have been removed.
       </p>
       
       <Button asChild>

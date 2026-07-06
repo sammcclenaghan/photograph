@@ -33,7 +33,8 @@ type ImageType = {
   name: string;
 };
 
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
+const fetcher = (url: string) =>
+  fetch(url).then((res) => res.json() as Promise<ImageType[]>);
 
 // Generate a SVG blur placeholder for images
 function generateBlurPlaceholder() {
@@ -77,7 +78,9 @@ const ImageItem = ({
   const aspectRatio = 3 / 4; // Standard 4:3 photo ratio
 
   useEffect(() => {
-    !isPresent && setTimeout(safeToRemove, 250);
+    if (!isPresent) {
+      setTimeout(safeToRemove, 250);
+    }
   }, [isPresent, safeToRemove]);
 
   // Scroll into view if this is the last viewed image
@@ -176,7 +179,7 @@ export default function Images({ galleryId }: ImageProps) {
     data: images,
     error,
     isLoading,
-  } = useSWR<ImageType[]>(`/api/images?galleryId=${galleryId}`, fetcher);
+  } = useSWR<ImageType[], Error>(`/api/images?galleryId=${galleryId}`, fetcher);
 
   const currentIndex =
     selectedImage && images
@@ -195,9 +198,10 @@ export default function Images({ galleryId }: ImageProps) {
     }
 
     const preloadImage = (index: number) => {
-      if (index >= 0 && index < images.length && index !== currentIndex) {
+      const image = images[index];
+      if (image && index !== currentIndex) {
         const img = new window.Image();
-        img.src = images[index].url;
+        img.src = image.url;
       }
     };
     const nextIndex = (currentIndex + 1) % images.length;
@@ -318,6 +322,7 @@ export default function Images({ galleryId }: ImageProps) {
       }
 
       const newImage = images[newIndex];
+      if (!newImage) return;
       setSelectedImage(newImage);
       setLastViewedPhoto(newImage.id);
       setIsZoomed(false);
@@ -395,7 +400,7 @@ export default function Images({ galleryId }: ImageProps) {
         })
         .catch(() => {
           // Fallback to clipboard
-          navigator.clipboard.writeText(shareUrl);
+          void navigator.clipboard.writeText(shareUrl);
           toast({
             title: "Link copied",
             description: "Photo link copied to clipboard!",
@@ -403,7 +408,7 @@ export default function Images({ galleryId }: ImageProps) {
         });
     } else {
       // Fallback for browsers without Web Share API
-      navigator.clipboard.writeText(shareUrl);
+      void navigator.clipboard.writeText(shareUrl);
       toast({
         title: "Link copied",
         description: "Photo link copied to clipboard!",
@@ -434,8 +439,12 @@ export default function Images({ galleryId }: ImageProps) {
               currentIndex < images.length - 1
                 ? currentIndex + 1
                 : currentIndex - 1;
-            setDirection(0);
             const newImage = images[nextIndex];
+            if (!newImage) {
+              closeModal();
+              return;
+            }
+            setDirection(0);
             setSelectedImage(newImage);
             setLastViewedPhoto(newImage.id);
 

@@ -11,7 +11,7 @@ export function ClerkThemeProvider({ children }: { children: React.ReactNode }) 
   return (
     <ClerkProvider
       appearance={{
-        baseTheme: resolvedTheme === 'dark' ? dark : null
+        theme: resolvedTheme === 'dark' ? dark : undefined
       }}
     >
       {children}

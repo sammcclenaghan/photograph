@@ -16,7 +16,7 @@ export default async function HomePage() {
     );
   }
 
-  const galleries = await getGalleries();
+  const galleries = (await getGalleries()) ?? [];
 
   return (
     <main className="mx-auto max-w-[1960px] p-4">

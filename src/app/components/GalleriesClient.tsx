@@ -10,14 +10,7 @@ import { Button } from "~/components/ui/button";
 import { useToast } from "~/hooks/use-toast"
 import { useAuth } from "@clerk/nextjs";
 
-type Gallery = {
-  id: number;
-  name: string;
-  description: string;
-  coverPhotoUrl: string | null;
-  coverColor: string | null;
-  userId: string;
-};
+import type { Gallery } from "~/server/db/schema";
 
 export default function GalleriesClient({ initialGalleries }: { initialGalleries: Gallery[] }) {
   const [galleries, setGalleries] = useState(initialGalleries);

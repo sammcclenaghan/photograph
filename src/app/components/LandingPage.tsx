@@ -111,7 +111,7 @@ export default function LandingPage() {
       
       {/* Testimonial/Example Section */}
       <section className="container mx-auto px-4 py-16 md:py-24">
-        <h2 className="text-3xl md:text-4xl font-normal text-center mb-6">See what's possible</h2>
+        <h2 className="text-3xl md:text-4xl font-normal text-center mb-6">See what&apos;s possible</h2>
         <p className="text-center text-muted-foreground max-w-2xl mx-auto mb-16">
           Join photographers around the world who use Photograph to showcase their work.
         </p>

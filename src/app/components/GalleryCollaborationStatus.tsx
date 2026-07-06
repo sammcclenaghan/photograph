@@ -27,7 +27,7 @@ export default function GalleryCollaborationStatus({ galleryId, ownerId }: Props
       try {
         const response = await fetch(`/api/galleries/${galleryId}/role`);
         if (response.ok) {
-          const data = await response.json();
+          const data = (await response.json()) as { role: CollaboratorRole | null };
           setRole(data.role);
         }
       } catch (error) {
@@ -37,7 +37,7 @@ export default function GalleryCollaborationStatus({ galleryId, ownerId }: Props
       }
     };
     
-    fetchRole();
+    void fetchRole();
   }, [galleryId, userId, isOwner]);
   
   if (loading) {

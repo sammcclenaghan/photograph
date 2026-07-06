@@ -7,17 +7,11 @@ import { useRouter } from 'next/navigation'
 import { useToast } from '~/hooks/use-toast'
 import CreateGalleryModal from './CreateGalleryModal'
 
-type Gallery = {
-  id: number;
-  name: string;
-  description: string | null;
-  coverPhotoUrl: string | null;
-  coverColor: string | null;
-};
+import type { Gallery } from "~/server/db/schema";
 
 interface EditGalleryButtonProps {
   gallery: Gallery;
-  variant?: 'default' | 'outline-solid' | 'ghost';
+  variant?: 'default' | 'outline' | 'ghost';
   size?: 'default' | 'sm' | 'lg' | 'icon';
 }
 

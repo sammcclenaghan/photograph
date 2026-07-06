@@ -16,7 +16,7 @@ export async function GET(request: Request) {
     const emailParam = url.searchParams.get('email');
     
     // Use email from query parameter if available
-    const userEmail = emailParam || user.sessionClaims?.email as string;
+    const userEmail = emailParam ?? (user.sessionClaims?.email as string);
     
     if (!userEmail) {
       console.error("User email not found in both query parameter and session claims");

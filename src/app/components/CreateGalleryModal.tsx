@@ -14,13 +14,7 @@ import { useRouter } from 'next/navigation';
 import { createGallery, updateGallery, updateGalleryCoverPhoto, updateGalleryCoverColor } from '~/server/actions';
 import UploadDropZone from './UploadDropZone';
 
-type Gallery = {
-  id: number;
-  name: string;
-  description: string | null;
-  coverPhotoUrl: string | null;
-  coverColor: string | null;
-};
+import type { Gallery } from "~/server/db/schema";
 
 interface CreateGalleryModalProps {
   children: React.ReactNode;
@@ -50,7 +44,7 @@ export default function CreateGalleryModal({
   useEffect(() => {
     if (initialGallery && open) {
       setName(initialGallery.name);
-      setDescription(initialGallery.description || '');
+      setDescription(initialGallery.description ?? '');
       setNewGallery(initialGallery);
       
       if (initialGallery.coverColor) {
@@ -74,7 +68,7 @@ export default function CreateGalleryModal({
 
     try {
       const formData = new FormData(event.currentTarget);
-      let gallery: Gallery;
+      let gallery: Gallery | undefined;
 
       if (newGallery) {
         // Update existing gallery
@@ -101,6 +95,7 @@ export default function CreateGalleryModal({
     if (newGallery) {
       try {
         const updatedGallery = await updateGalleryCoverPhoto(newGallery.id, url);
+        if (!updatedGallery) throw new Error("Gallery update returned no row");
         onGalleryCreated(updatedGallery);
         setOpen(false);
         resetState();
@@ -115,6 +110,7 @@ export default function CreateGalleryModal({
       try {
         setIsLoading(true);
         const updatedGallery = await updateGalleryCoverColor(newGallery.id, selectedColor);
+        if (!updatedGallery) throw new Error("Gallery update returned no row");
         onGalleryCreated(updatedGallery);
         setOpen(false);
         resetState();
@@ -150,7 +146,7 @@ export default function CreateGalleryModal({
     setStep(1);
     if (newGallery) {
       setName(newGallery.name);
-      setDescription(newGallery.description || '');
+      setDescription(newGallery.description ?? '');
     }
   }
 
@@ -219,7 +215,7 @@ export default function CreateGalleryModal({
               <TabsContent value="photo" className="pt-4">
                 <div className="flex flex-col space-y-4">
                   <Label>Cover Photo</Label>
-                  {newGallery && newGallery.coverPhotoUrl && (
+                  {newGallery?.coverPhotoUrl && (
                     <div className="mb-4">
                       <p className="text-sm mb-2 text-muted-foreground">Current cover photo:</p>
                       <div className="relative w-full h-48 overflow-hidden rounded-md">

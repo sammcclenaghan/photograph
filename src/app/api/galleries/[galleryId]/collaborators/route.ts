@@ -6,7 +6,7 @@ import { and, eq } from "drizzle-orm";
 
 export async function GET(
   req: Request,
-  { params }: { params: { galleryId: string } }
+  { params }: { params: Promise<{ galleryId: string }> }
 ) {
   try {
     const user = await auth();
@@ -14,7 +14,8 @@ export async function GET(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const galleryId = parseInt(params.galleryId);
+    const { galleryId: galleryIdParam } = await params;
+    const galleryId = parseInt(galleryIdParam);
     if (isNaN(galleryId)) {
       return new NextResponse("Invalid gallery ID", { status: 400 });
     }

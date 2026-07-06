@@ -55,7 +55,7 @@ export async function deleteGallery(galleryId: number) {
     where: (model, { eq }) => eq(model.id, galleryId),
   });
 
-  if (!gallery || gallery.userId !== userId) {
+  if (gallery?.userId !== userId) {
     throw new Error("Unauthorized - only gallery owner can delete a gallery");
   }
 

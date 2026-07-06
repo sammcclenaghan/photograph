@@ -49,7 +49,7 @@ export default function ManageCollaboratorsButton({
   // Load collaborators on initial render as well as dialog open
   useEffect(() => {
     if (!initialCollaborators.length) {
-      fetchCollaborators();
+      void fetchCollaborators();
     } else {
       setCollaborators(initialCollaborators);
     }
@@ -57,7 +57,7 @@ export default function ManageCollaboratorsButton({
 
   useEffect(() => {
     if (isOpen) {
-      fetchCollaborators();
+      void fetchCollaborators();
     }
   }, [isOpen]);
 
@@ -75,7 +75,7 @@ export default function ManageCollaboratorsButton({
         throw new Error("Failed to fetch collaborators");
       }
       
-      const data = await response.json();
+      const data = (await response.json()) as Collaborator[];
       setCollaborators(data);
     } catch (error) {
       console.error("Error fetching collaborators:", error);
@@ -184,7 +184,7 @@ export default function ManageCollaboratorsButton({
                   <h3 className="text-sm font-medium mb-2">Pending Invitations</h3>
                   <div className="space-y-2">
                     {pendingInvitations.map((invitation) => {
-                      const email = invitation.email || invitation.userId.replace('pending-', '');
+                      const email = invitation.email ?? invitation.userId.replace('pending-', '');
                       
                       return (
                         <div key={invitation.userId} className="flex items-center justify-between py-2 border-b border-border">
@@ -234,7 +234,7 @@ export default function ManageCollaboratorsButton({
                   <h3 className="text-sm font-medium mb-2">Active Collaborators</h3>
                   <div className="space-y-2">
                     {activeCollaborators.map((collaborator) => {
-                      const displayEmail = collaborator.email || 'Unknown user';
+                      const displayEmail = collaborator.email ?? 'Unknown user';
                       
                       return (
                         <div key={collaborator.userId} className="flex items-center justify-between py-2 border-b border-border">

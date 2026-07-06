@@ -12,10 +12,13 @@ export async function POST(req: Request) {
     }
 
     // Extract the gallery ID and email from the request body
-    const { galleryId, email } = await req.json();
-    
+    const { galleryId, email } = (await req.json()) as {
+      galleryId?: number | string;
+      email?: string;
+    };
+
     // Get user email from request or session claims
-    const userEmail = email || user.sessionClaims?.email as string;
+    const userEmail = email ?? (user.sessionClaims?.email as string);
     
     if (!userEmail) {
       console.error("User email not found in both request body and session claims");

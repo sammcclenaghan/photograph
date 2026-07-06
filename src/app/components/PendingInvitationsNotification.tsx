@@ -31,10 +31,10 @@ export default function PendingInvitationsNotification() {
   // Fetch invitations when user data is loaded
   useEffect(() => {
     if (isLoaded && user) {
-      fetchInvitations();
-      
+      void fetchInvitations();
+
       const interval = setInterval(() => {
-        fetchInvitations();
+        void fetchInvitations();
       }, 30000); // Check for new invitations every 30 seconds
       
       return () => clearInterval(interval);
@@ -60,7 +60,7 @@ export default function PendingInvitationsNotification() {
       console.log("Invitations response status:", response.status);
       
       if (response.ok) {
-        const data = await response.json();
+        const data = (await response.json()) as Invitation[];
         console.log("Invitations data:", data);
         setInvitations(data);
       } else {
@@ -180,7 +180,7 @@ export default function PendingInvitationsNotification() {
               <div className="mb-2">
                 <p className="font-medium">{invitation.galleryName}</p>
                 <p className="text-sm text-muted-foreground">
-                  You've been invited as a <span className="font-medium">{invitation.role}</span>
+                  You&apos;ve been invited as a <span className="font-medium">{invitation.role}</span>
                 </p>
               </div>
               <div className="flex gap-2 justify-end">

@@ -12,8 +12,8 @@ export default function CreateGalleryPage() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const galleryId = await createGallery(formData);
-    setGalleryId(galleryId ?? null);
+    const gallery = await createGallery(formData);
+    setGalleryId(gallery?.id ?? null);
   };
 
   return (

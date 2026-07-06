@@ -1,6 +1,9 @@
 import { useDropzone } from "@uploadthing/react";
 import { useCallback, useState } from "react";
-import { generateClientDropzoneAccept } from "uploadthing/client";
+import {
+  generateClientDropzoneAccept,
+  generatePermittedFileTypes,
+} from "uploadthing/client";
 import { useUploadThing } from "~/utils/uploadthing";
 import { Button } from "~/components/ui/button";
 import { UploadCloud } from 'lucide-react';
@@ -20,7 +23,7 @@ export default function UploadDropZone({
 
   const { startUpload, isUploading, routeConfig } = useUploadThing(type, {
     onClientUploadComplete: (res) => {
-      if (res && res[0]) {
+      if (res?.[0]) {
         onUploadComplete(res[0].url);
       }
       setFiles([]);
@@ -30,8 +33,8 @@ export default function UploadDropZone({
       console.error("Error uploading file:", error);
       alert("Error uploading file. Please try again.");
     },
-    onUploadBegin: ({ file }) => {
-      console.log("Upload has begun for", file);
+    onUploadBegin: (fileName) => {
+      console.log("Upload has begun for", fileName);
     },
   });
 
@@ -45,13 +48,15 @@ export default function UploadDropZone({
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: generateClientDropzoneAccept(routeConfig),
+    accept: generateClientDropzoneAccept(
+      generatePermittedFileTypes(routeConfig).fileTypes,
+    ),
     multiple: false,
   });
 
   const handleUpload = () => {
     if (files.length > 0) {
-      startUpload(files, { galleryId });
+      void startUpload(files, { galleryId });
     }
   };
 
@@ -89,7 +94,7 @@ export default function UploadDropZone({
             : ""}
         </p>
       </div>
-      {files.length > 0 && (
+      {files[0] && (
         <div className="flex justify-between items-center">
           <p className="text-sm text-gray-600">Selected file: {files[0].name}</p>
           <Button

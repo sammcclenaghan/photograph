@@ -112,3 +112,6 @@ export const imagesRelations = relations(images, ({ one }) => ({
     references: [galleries.id],
   }),
 }));
+
+// Row types — single source of truth for components that pass rows around
+export type Gallery = typeof galleries.$inferSelect;
