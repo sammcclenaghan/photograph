@@ -35,7 +35,7 @@ export default async function GalleryPage({ params }: Props) {
 
     return (
       <div className="w-full py-6">
-        <div className="px-4 md:px-6 lg:px-8 max-w-screen-2xl mx-auto mb-6">
+        <div className="px-4 md:px-6 lg:px-8 max-w-(--breakpoint-2xl) mx-auto mb-6">
           <header className="flex flex-row items-center justify-between pb-4 border-b border-border">
             <div className="flex items-center gap-3">
               <h1 className="text-3xl font-bold text-foreground">{gallery.name}</h1>

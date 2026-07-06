@@ -17,7 +17,7 @@ type Gallery = {
 
 interface EditGalleryButtonProps {
   gallery: Gallery;
-  variant?: 'default' | 'outline' | 'ghost';
+  variant?: 'default' | 'outline-solid' | 'ghost';
   size?: 'default' | 'sm' | 'lg' | 'icon';
 }
 

@@ -106,7 +106,7 @@ export function UploadButton({
           />
         )}
       </label>
-      <div className="h-[1.25rem] text-xs leading-5 text-gray-600">
+      <div className="h-5 text-xs leading-5 text-gray-600">
         {type === "galleryImageUploader" ? "Upload images to gallery" : "Upload cover photo"}
       </div>
     </div>

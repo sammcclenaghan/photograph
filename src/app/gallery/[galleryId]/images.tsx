@@ -604,11 +604,11 @@ export default function Images({ galleryId }: ImageProps) {
                 {/* Overlaid UI elements */}
                 <div className="absolute inset-0 mx-auto flex max-w-7xl items-center justify-center">
                   {isLoaded && (
-                    <div className="relative aspect-[3/2] max-h-full w-full">
+                    <div className="relative aspect-3/2 max-h-full w-full">
                       {/* Navigation buttons */}
                       {images.length > 1 && currentIndex > 0 && (
                         <button
-                          className="absolute left-3 top-[calc(50%-16px)] rounded-full bg-black/50 p-3 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white focus:outline-none"
+                          className="absolute left-3 top-[calc(50%-16px)] rounded-full bg-black/50 p-3 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white focus:outline-hidden"
                           style={{ transform: "translate3d(0, 0, 0)" }}
                           onClick={() => navigateImage("prev")}
                           aria-label="Previous image"
@@ -620,7 +620,7 @@ export default function Images({ galleryId }: ImageProps) {
                       {images.length > 1 &&
                         currentIndex < images.length - 1 && (
                           <button
-                            className="absolute right-3 top-[calc(50%-16px)] rounded-full bg-black/50 p-3 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white focus:outline-none"
+                            className="absolute right-3 top-[calc(50%-16px)] rounded-full bg-black/50 p-3 text-white/75 backdrop-blur-lg transition hover:bg-black/75 hover:text-white focus:outline-hidden"
                             style={{ transform: "translate3d(0, 0, 0)" }}
                             onClick={() => navigateImage("next")}
                             aria-label="Next image"
@@ -688,10 +688,10 @@ export default function Images({ galleryId }: ImageProps) {
 
                   {/* Bottom thumbnail carousel */}
                   {images.length > 1 && (
-                    <div className="fixed inset-x-0 bottom-0 z-40 overflow-hidden bg-gradient-to-b from-black/0 to-black/60">
+                    <div className="fixed inset-x-0 bottom-0 z-40 overflow-hidden bg-linear-to-b from-black/0 to-black/60">
                       <motion.div
                         initial={false}
-                        className="mx-auto my-6 flex aspect-[3/2] h-14"
+                        className="mx-auto my-6 flex aspect-3/2 h-14"
                       >
                         <AnimatePresence initial={false}>
                           {images
@@ -737,9 +737,9 @@ export default function Images({ galleryId }: ImageProps) {
                                   key={image.id}
                                   className={` ${
                                     idx === currentIndex
-                                      ? "z-20 rounded-md shadow shadow-black/50"
+                                      ? "z-20 rounded-md shadow-sm shadow-black/50"
                                       : "z-10"
-                                  } ${idx === 0 ? "rounded-l-md" : ""} ${idx === images.length - 1 ? "rounded-r-md" : ""} relative inline-block w-full shrink-0 transform-gpu overflow-hidden focus:outline-none`}
+                                  } ${idx === 0 ? "rounded-l-md" : ""} ${idx === images.length - 1 ? "rounded-r-md" : ""} relative inline-block w-full shrink-0 transform-gpu overflow-hidden focus:outline-hidden`}
                                 >
                                   <Image
                                     alt=""

@@ -70,7 +70,7 @@ export default function GalleriesClient({ initialGalleries }: { initialGalleries
               <Link href={`gallery/${gallery.id}`}>
                 <div className="relative">
                   <div 
-                    className="relative h-72 w-full overflow-hidden rounded-lg flex items-center justify-center bg-muted shadow-sm transition-all duration-300 hover:shadow-md"
+                    className="relative h-72 w-full overflow-hidden rounded-lg flex items-center justify-center bg-muted shadow-xs transition-all duration-300 hover:shadow-md"
                     style={gallery.coverColor ? { backgroundColor: gallery.coverColor } : {}}
                   >
                     {gallery.coverPhotoUrl ? (
@@ -88,7 +88,7 @@ export default function GalleriesClient({ initialGalleries }: { initialGalleries
                     
                     {/* Shared indicator */}
                     {!isOwner && (
-                      <div className="absolute top-2 left-2 bg-secondary/80 backdrop-blur-sm rounded-md p-1.5 flex items-center gap-1">
+                      <div className="absolute top-2 left-2 bg-secondary/80 backdrop-blur-xs rounded-md p-1.5 flex items-center gap-1">
                         <Share2Icon className="h-3.5 w-3.5 text-foreground" />
                         <span className="text-xs font-medium">Shared</span>
                       </div>
@@ -107,7 +107,7 @@ export default function GalleriesClient({ initialGalleries }: { initialGalleries
                 <Button
                   variant="secondary"
                   size="icon"
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-background/70 backdrop-blur-sm hover:bg-background/90 dark:bg-secondary/80 dark:hover:bg-secondary"
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-background/70 backdrop-blur-xs hover:bg-background/90 dark:bg-secondary/80 dark:hover:bg-secondary"
                   onClick={() => handleDeleteGallery(gallery.id)}
                   aria-label={`Delete ${gallery.name}`}
                 >

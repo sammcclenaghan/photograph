@@ -74,7 +74,7 @@ export default function LandingPage() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-12">
             {/* Feature 1 */}
-            <div className="bg-background rounded-xl p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-background rounded-xl p-6 md:p-8 shadow-xs hover:shadow-md transition-shadow">
               <div className="bg-primary/10 p-3 rounded-full w-fit mb-6">
                 <Camera className="h-6 w-6 text-primary" />
               </div>
@@ -85,7 +85,7 @@ export default function LandingPage() {
             </div>
             
             {/* Feature 2 */}
-            <div className="bg-background rounded-xl p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow">
+            <div className="bg-background rounded-xl p-6 md:p-8 shadow-xs hover:shadow-md transition-shadow">
               <div className="bg-primary/10 p-3 rounded-full w-fit mb-6">
                 <Share2 className="h-6 w-6 text-primary" />
               </div>
@@ -96,7 +96,7 @@ export default function LandingPage() {
             </div>
             
             {/* Feature 3 */}
-            <div className="bg-background rounded-xl p-6 md:p-8 shadow-sm hover:shadow-md transition-shadow lg:col-span-1 md:col-span-2 lg:col-start-auto md:col-start-1">
+            <div className="bg-background rounded-xl p-6 md:p-8 shadow-xs hover:shadow-md transition-shadow lg:col-span-1 md:col-span-2 lg:col-start-auto md:col-start-1">
               <div className="bg-primary/10 p-3 rounded-full w-fit mb-6">
                 <Layout className="h-6 w-6 text-primary" />
               </div>
@@ -118,7 +118,7 @@ export default function LandingPage() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 lg:gap-16">
           {/* Example Gallery 1 */}
-          <div className="relative rounded-xl overflow-hidden aspect-[3/4] group">
+          <div className="relative rounded-xl overflow-hidden aspect-3/4 group">
             <Image 
               src={image1}
               alt="Nature gallery example"
@@ -126,14 +126,14 @@ export default function LandingPage() {
               className="object-cover transition-transform duration-500 group-hover:scale-105"
               sizes="(max-width: 768px) 100vw, 50vw"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6 md:p-8">
+            <div className="absolute inset-0 bg-linear-to-t from-black/70 to-transparent flex flex-col justify-end p-6 md:p-8">
               <h3 className="text-white text-2xl font-medium">Nature Collection</h3>
               <p className="text-white/80">By Sarah Johnson</p>
             </div>
           </div>
           
           {/* Example Gallery 2 */}
-          <div className="relative rounded-xl overflow-hidden aspect-[3/4] group">
+          <div className="relative rounded-xl overflow-hidden aspect-3/4 group">
             <Image 
               src={image2}
               alt="Portrait gallery example"
@@ -141,7 +141,7 @@ export default function LandingPage() {
               className="object-cover transition-transform duration-500 group-hover:scale-105"
               sizes="(max-width: 768px) 100vw, 50vw"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6 md:p-8">
+            <div className="absolute inset-0 bg-linear-to-t from-black/70 to-transparent flex flex-col justify-end p-6 md:p-8">
               <h3 className="text-white text-2xl font-medium">Urban Perspectives</h3>
               <p className="text-white/80">By Michael Chen</p>
             </div>

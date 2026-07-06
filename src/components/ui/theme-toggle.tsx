@@ -53,7 +53,7 @@ export function ThemeToggle() {
       disabled={isAnimating}
     >
       {/* Horizon line */}
-      <div className="absolute left-0 right-0 top-1/2 h-[1px] bg-foreground/10 z-10" />
+      <div className="absolute left-0 right-0 top-1/2 h-px bg-foreground/10 z-10" />
       
       <div className="relative w-full h-full">
         {/* Sun */}
@@ -62,8 +62,8 @@ export function ThemeToggle() {
             !isDark && !isGoingDark
               ? "top-0 opacity-100" // Visible in light mode
               : isDark && isGoingLight
-                ? "translate-y-[-100%] opacity-100" // Rising when going to light
-                : "translate-y-[100%] opacity-0" // Set/hidden otherwise
+                ? "-translate-y-full opacity-100" // Rising when going to light
+                : "translate-y-full opacity-0" // Set/hidden otherwise
           }`}
         />
         
@@ -73,8 +73,8 @@ export function ThemeToggle() {
             isDark && !isGoingLight
               ? "top-0 opacity-100" // Visible in dark mode
               : !isDark && isGoingDark
-                ? "translate-y-[-100%] opacity-100" // Rising when going to dark
-                : "translate-y-[100%] opacity-0" // Set/hidden otherwise
+                ? "-translate-y-full opacity-100" // Rising when going to dark
+                : "translate-y-full opacity-0" // Set/hidden otherwise
           }`}
         />
       </div>
